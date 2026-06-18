@@ -1,9 +1,10 @@
 // ─── Relay auth ─────────────────────────────────────────────────────────
-// Accounts live in localStorage (namespaced under "relay*" so this app
-// never collides with any other project's storage on the same browser).
-// Passwords are never stored in plain text — see crypto-utils.js.
-// A small public profile (name/email/photo) is mirrored to Firestore so
-// other Relay users can find you to start a chat.
+// Relay prefers Firebase Authentication when FIREBASE_CONFIG is filled in.
+// The original localStorage auth remains as an offline/dev fallback so the
+// static demo still works before Firebase is connected. Passwords are never
+// stored in plain text in fallback mode — see crypto-utils.js. A small public
+// profile (name/email/photo) is mirrored to Firestore so other Relay users can
+// find you to start a chat.
 
 const RELAY_USERS_KEY = "relayUsers";
 const RELAY_CURRENT_USER_KEY = "relayCurrentUser";
@@ -75,6 +76,11 @@ function getCurrentUser() {
 function logoutCurrentUser() {
   localStorage.removeItem(RELAY_CURRENT_USER_KEY);
   localStorage.removeItem(RELAY_LAST_ACTIVITY_KEY);
+ codex/continue-development-on-chat-website-j5d0ug
+  const auth = getFirebaseAuth();
+  if (auth && auth.currentUser) auth.signOut().catch(() => {});
+
+ main
 }
 
 // ── Firebase ───────────────────────────────────────────────────────────
@@ -85,15 +91,49 @@ function firebaseIsConfigured() {
 
 // Lazily initializes the Firebase app (safe to call many times) and
 // returns a Firestore instance, or null if config.js hasn't been filled in.
-function getFirebaseDb() {
+function ensureFirebaseApp() {
   if (typeof firebase === "undefined" || !firebaseIsConfigured()) return null;
   try {
     if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
-    return firebase.firestore();
+    return firebase.app();
   } catch (e) {
     console.warn("Relay: Firebase init failed —", e.message);
     return null;
   }
+}
+
+function getFirebaseDb() {
+  if (!ensureFirebaseApp() || !firebase.firestore) return null;
+  return firebase.firestore();
+}
+
+function getFirebaseAuth() {
+  if (!ensureFirebaseApp() || !firebase.auth) return null;
+  return firebase.auth();
+}
+
+function firebaseAuthAvailable() {
+  return !!getFirebaseAuth();
+}
+
+function userFromFirebaseUser(firebaseUser) {
+  if (!firebaseUser || !firebaseUser.email) return null;
+  return {
+    name: firebaseUser.displayName || firebaseUser.email.split("@")[0],
+    email: firebaseUser.email.toLowerCase(),
+    profilePhoto: firebaseUser.photoURL || "",
+    createdAt: firebaseUser.metadata && firebaseUser.metadata.creationTime ? new Date(firebaseUser.metadata.creationTime).toISOString() : new Date().toISOString(),
+    authProvider: "firebase",
+    uid: firebaseUser.uid,
+  };
+}
+
+function persistFirebaseSession(firebaseUser) {
+  const relayUser = userFromFirebaseUser(firebaseUser);
+  if (!relayUser) return null;
+  setCurrentUser(relayUser);
+  syncUserToFirebase(relayUser);
+  return relayUser;
 }
 
 function emailKey(email) {
@@ -117,7 +157,9 @@ function saveProfilePhotoForCurrentUser(photoDataUrl) {
   const current = getCurrentUser();
   if (!current) return;
   updateUserByEmail(current.email, (user) => ({ ...user, profilePhoto: photoDataUrl }));
-  const refreshed = findUserByEmail(current.email);
+  const auth = getFirebaseAuth();
+  if (auth && auth.currentUser) auth.currentUser.updateProfile({ photoURL: photoDataUrl }).catch(() => {});
+  const refreshed = findUserByEmail(current.email) || { ...current, profilePhoto: photoDataUrl };
   if (refreshed) {
     setCurrentUser(refreshed);
     syncUserToFirebase(refreshed);
@@ -128,7 +170,9 @@ function saveDisplayNameForCurrentUser(name) {
   const current = getCurrentUser();
   if (!current) return;
   updateUserByEmail(current.email, (user) => ({ ...user, name }));
-  const refreshed = findUserByEmail(current.email);
+  const auth = getFirebaseAuth();
+  if (auth && auth.currentUser) auth.currentUser.updateProfile({ displayName: name }).catch(() => {});
+  const refreshed = findUserByEmail(current.email) || { ...current, name };
   if (refreshed) {
     setCurrentUser(refreshed);
     syncUserToFirebase(refreshed);
@@ -140,9 +184,12 @@ function deleteCurrentAccount() {
   if (!current) return;
   const users = readUsers().filter((user) => user.email !== current.email);
   saveUsers(users);
-  logoutCurrentUser();
   const db = getFirebaseDb();
   if (db) db.collection("users").doc(emailKey(current.email)).delete().catch(() => {});
+  const auth = getFirebaseAuth();
+  const firebaseUser = auth && auth.currentUser;
+  if (firebaseUser) firebaseUser.delete().catch(() => auth.signOut().catch(() => {}));
+  logoutCurrentUser();
 }
 
 // ── Page guards ────────────────────────────────────────────────────────
@@ -282,28 +329,33 @@ function runSignup() {
       setMessage(formMessage, "Passwords do not match.", "error");
       return;
     }
-    if (findUserByEmail(email)) {
+    if (!firebaseAuthAvailable() && findUserByEmail(email)) {
       setMessage(formMessage, "This email is already registered.", "error");
       return;
     }
 
     try {
       setMessage(formMessage, "Creating account…", "warning");
-      const passwordHash = await securePasswordStore(password);
+      if (firebaseAuthAvailable()) {
+        await createFirebaseAccount(email, password, name);
+      } else {
+        const passwordHash = await securePasswordStore(password);
 
-      const newUser = {
-        name,
-        email,
-        passwordHash,
-        profilePhoto: "",
-        createdAt: new Date().toISOString(),
-      };
+        const newUser = {
+          name,
+          email,
+          passwordHash,
+          profilePhoto: "",
+          createdAt: new Date().toISOString(),
+          authProvider: "local",
+        };
 
-      const users = readUsers();
-      users.push(newUser);
-      saveUsers(users);
-      setCurrentUser(newUser);
-      syncUserToFirebase(newUser);
+        const users = readUsers();
+        users.push(newUser);
+        saveUsers(users);
+        setCurrentUser(newUser);
+        syncUserToFirebase(newUser);
+      }
 
       setMessage(formMessage, "Account created! Opening Relay…", "success");
       form.reset();
@@ -340,28 +392,47 @@ function runLogin() {
     const password = passwordInput.value;
     const user = findUserByEmail(email);
 
+ codex/continue-development-on-chat-website-j5d0ug
+
     if (!user) {
       formMessage.textContent = "Email or password is incorrect.";
       formMessage.className = "form-message error";
       return;
     }
 
+ main
     try {
       formMessage.textContent = "Verifying password…";
       formMessage.className = "form-message warning";
+
+ codex/continue-development-on-chat-website-j5d0ug
+      if (firebaseAuthAvailable()) {
+        await loginFirebaseEmail(email, password);
+      } else {
+        if (!user) {
+          formMessage.textContent = "Email or password is incorrect.";
+          formMessage.className = "form-message error";
+          return;
+        }
+        const passwordMatch = await verifyStoredPassword(password, user.passwordHash);
+        if (!passwordMatch) {
+          formMessage.textContent = "Email or password is incorrect.";
+          formMessage.className = "form-message error";
+          return;
+        }
+        setCurrentUser(user);
+        syncUserToFirebase(user);
 
       const passwordMatch = await verifyStoredPassword(password, user.passwordHash);
       if (!passwordMatch) {
         formMessage.textContent = "Email or password is incorrect.";
         formMessage.className = "form-message error";
         return;
+         main
       }
 
       if (rememberInput.checked) localStorage.setItem(RELAY_REMEMBERED_EMAIL_KEY, email);
       else localStorage.removeItem(RELAY_REMEMBERED_EMAIL_KEY);
-
-      setCurrentUser(user);
-      syncUserToFirebase(user);
 
       formMessage.textContent = "Login successful.";
       formMessage.className = "form-message success";
@@ -373,13 +444,78 @@ function runLogin() {
   });
 }
 
+// ── Firebase Authentication helpers ───────────────────────────────────
+
+async function createFirebaseAccount(email, password, name) {
+  const auth = getFirebaseAuth();
+  if (!auth) throw new Error("Firebase Authentication is not configured.");
+  const credential = await auth.createUserWithEmailAndPassword(email, password);
+  if (credential.user && name) await credential.user.updateProfile({ displayName: name });
+  return persistFirebaseSession(credential.user);
+}
+
+async function loginFirebaseEmail(email, password) {
+  const auth = getFirebaseAuth();
+  if (!auth) throw new Error("Firebase Authentication is not configured.");
+  const credential = await auth.signInWithEmailAndPassword(email, password);
+  return persistFirebaseSession(credential.user);
+}
+
+async function loginWithGoogle() {
+  const auth = getFirebaseAuth();
+  if (!auth) throw new Error("Add Firebase config and enable Google sign-in in Firebase Authentication first.");
+  const provider = new firebase.auth.GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: "select_account" });
+  const credential = await auth.signInWithPopup(provider);
+  return persistFirebaseSession(credential.user);
+}
+
+function setupFirebaseAuthObserver() {
+  const auth = getFirebaseAuth();
+  if (!auth || setupFirebaseAuthObserver.bound) return;
+  setupFirebaseAuthObserver.bound = true;
+  auth.onAuthStateChanged((firebaseUser) => {
+    if (firebaseUser) {
+      persistFirebaseSession(firebaseUser);
+      if (isOnPage("login.html") || isOnPage("signup.html")) window.location.href = "chat.html";
+    }
+  });
+}
+
+function setupGoogleButtons() {
+  ["google-login-btn", "google-signup-btn"].forEach((id) => {
+    const button = document.getElementById(id);
+    if (!button || button.dataset.googleBound === "true") return;
+    button.dataset.googleBound = "true";
+    if (!firebaseAuthAvailable()) {
+      button.disabled = true;
+      button.title = "Add Firebase config and enable Google sign-in to use this.";
+    }
+    button.addEventListener("click", async () => {
+      const messageEl = document.getElementById("login-message") || document.getElementById("signup-message");
+      try {
+        if (messageEl) { messageEl.textContent = "Opening Google sign-in…"; messageEl.className = "form-message warning"; }
+        await loginWithGoogle();
+        if (messageEl) { messageEl.textContent = "Signed in with Google."; messageEl.className = "form-message success"; }
+        window.setTimeout(() => { window.location.href = "chat.html"; }, 250);
+      } catch (error) {
+        if (messageEl) { messageEl.textContent = "Google sign-in failed: " + error.message; messageEl.className = "form-message error"; }
+      }
+    });
+  });
+}
+
 function initAuth() {
+  setupFirebaseAuthObserver();
   requireLoginForPage();
   showStorageWarning();
   showLoggedInNotice();
   runSignup();
   runLogin();
   setupPasswordToggles();
+ codex/continue-development-on-chat-website-j5d0ug
+  setupGoogleButtons();
+ main
   startPrivacyLockWatch();
 }
 

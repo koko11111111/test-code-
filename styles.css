@@ -379,3 +379,22 @@ input:focus, textarea:focus { border-color: var(--signal); outline: none; }
   .rl-back-btn { display: inline-flex; }
   .rl-msg-row { max-width: 86%; }
 }
+
+/* ── Voice messages ───────────────────────────────────────────────────── */
+.rl-voice-btn {
+  display: flex; align-items: center; justify-content: center; width: 38px; height: 38px;
+  border-radius: 50%; background: var(--surface-2); border: none; color: var(--text-muted);
+  cursor: pointer; flex-shrink: 0; font-size: 1rem;
+}
+.rl-voice-btn:hover { color: var(--signal); }
+.rl-voice-btn.recording { background: var(--danger-soft); color: var(--danger); animation: rl-record-pulse 1s ease-in-out infinite; }
+@keyframes rl-record-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+.rl-voice-preview-wrap {
+  display: flex; align-items: center; gap: .6rem; padding: .6rem 1.3rem; border-top: 1px solid var(--line);
+  color: var(--text-muted); font-size: .78rem;
+}
+.rl-voice-preview-wrap audio { width: min(260px, 52vw); height: 34px; }
+.rl-voice-preview-wrap button { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem; }
+.rl-voice-message { display: flex; flex-direction: column; gap: .35rem; min-width: min(260px, 62vw); }
+.rl-voice-message span { font-size: .78rem; opacity: .82; }
+.rl-voice-message audio { width: 100%; height: 34px; }
