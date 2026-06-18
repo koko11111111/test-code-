@@ -76,8 +76,11 @@ function getCurrentUser() {
 function logoutCurrentUser() {
   localStorage.removeItem(RELAY_CURRENT_USER_KEY);
   localStorage.removeItem(RELAY_LAST_ACTIVITY_KEY);
+ codex/continue-development-on-chat-website-j5d0ug
   const auth = getFirebaseAuth();
   if (auth && auth.currentUser) auth.signOut().catch(() => {});
+
+ main
 }
 
 // ── Firebase ───────────────────────────────────────────────────────────
@@ -389,10 +392,20 @@ function runLogin() {
     const password = passwordInput.value;
     const user = findUserByEmail(email);
 
+ codex/continue-development-on-chat-website-j5d0ug
+
+    if (!user) {
+      formMessage.textContent = "Email or password is incorrect.";
+      formMessage.className = "form-message error";
+      return;
+    }
+
+ main
     try {
       formMessage.textContent = "Verifying password…";
       formMessage.className = "form-message warning";
 
+ codex/continue-development-on-chat-website-j5d0ug
       if (firebaseAuthAvailable()) {
         await loginFirebaseEmail(email, password);
       } else {
@@ -409,6 +422,13 @@ function runLogin() {
         }
         setCurrentUser(user);
         syncUserToFirebase(user);
+
+      const passwordMatch = await verifyStoredPassword(password, user.passwordHash);
+      if (!passwordMatch) {
+        formMessage.textContent = "Email or password is incorrect.";
+        formMessage.className = "form-message error";
+        return;
+         main
       }
 
       if (rememberInput.checked) localStorage.setItem(RELAY_REMEMBERED_EMAIL_KEY, email);
@@ -493,7 +513,9 @@ function initAuth() {
   runSignup();
   runLogin();
   setupPasswordToggles();
+ codex/continue-development-on-chat-website-j5d0ug
   setupGoogleButtons();
+ main
   startPrivacyLockWatch();
 }
 
