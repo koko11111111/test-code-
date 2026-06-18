@@ -35,6 +35,7 @@
   const peerAvatarSlot = document.getElementById("peer-avatar-slot");
   const peerNameEl = document.getElementById("peer-name");
   const peerSubEl = document.getElementById("peer-sub");
+  const notificationsToggle = document.getElementById("notifications-toggle");
   const chatSearchToggle = document.getElementById("chat-search-toggle");
   const chatSearchBar = document.getElementById("chat-search-bar");
   const chatSearchInput = document.getElementById("chat-search-input");
@@ -63,6 +64,7 @@
   let isTypingFlag = false;
   let typingClearTimer = null;
   let currentPeerTyping = false;
+  let newestMessageSeenAt = 0;
 
   let unsubConvDoc = null;
   let unsubPeerDoc = null;
@@ -341,6 +343,7 @@
     unsubMessages = convRef.collection("messages").orderBy("createdAt", "asc").limitToLast(200)
       .onSnapshot((snap) => {
         currentMessages = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        notifyForIncomingMessages(currentMessages);
         markVisibleMessagesRead();
         renderMessages();
       }, (err) => {
@@ -496,6 +499,29 @@
     db.collection("conversations").doc(currentConvId).collection("messages").doc(msgId).delete().catch(() => {});
   }
 
+  // ---- browser notifications ----
+  function notifyForIncomingMessages(messages) {
+    if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
+    if (!document.hidden || messages.length === 0) return;
+    const latest = messages[messages.length - 1];
+    if (!latest || latest.sender === me.email || !latest.createdAt || typeof latest.createdAt.toMillis !== "function") return;
+    const latestMs = latest.createdAt.toMillis();
+    if (latestMs <= newestMessageSeenAt) return;
+    newestMessageSeenAt = latestMs;
+    const body = latest.text || (latest.imageUrl ? "Sent a photo" : "New message");
+    new Notification(currentPeer && (currentPeer.name || currentPeer.email) || "Relay", {
+      body: body.length > 120 ? body.slice(0, 117) + "…" : body,
+      tag: currentConvId || "relay-message",
+    });
+  }
+
+  function updateNotificationButton() {
+    if (!notificationsToggle) return;
+    if (typeof Notification === "undefined") { notificationsToggle.classList.add("hidden"); return; }
+    notificationsToggle.textContent = Notification.permission === "granted" ? "🔕" : "🔔";
+    notificationsToggle.title = Notification.permission === "granted" ? "Notifications enabled" : "Enable notifications";
+  }
+
   // ---- typing indicator (mine) ----
   function notifyTyping(active) {
     if (!currentConvId || isTypingFlag === active) return;
@@ -628,6 +654,13 @@
     });
     userSearchInput.addEventListener("focus", () => {
       if (allUsersCache.length === 0) loadAllUsers();
+    });
+
+    updateNotificationButton();
+    if (notificationsToggle) notificationsToggle.addEventListener("click", async () => {
+      if (typeof Notification === "undefined") return;
+      if (Notification.permission === "default") await Notification.requestPermission();
+      updateNotificationButton();
     });
 
     backBtn.addEventListener("click", () => appEl.classList.remove("rl-chat-open"));

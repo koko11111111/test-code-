@@ -8,6 +8,9 @@
 const RELAY_USERS_KEY = "relayUsers";
 const RELAY_CURRENT_USER_KEY = "relayCurrentUser";
 const RELAY_REMEMBERED_EMAIL_KEY = "relayRememberedEmail";
+const RELAY_PRIVACY_LOCK_KEY = "relayPrivacyLock";
+const RELAY_LAST_ACTIVITY_KEY = "relayLastActivity";
+const RELAY_IDLE_TIMEOUT_MS = 30 * 60 * 1000;
 
 function isStorageAvailable() {
   try {
@@ -71,6 +74,7 @@ function getCurrentUser() {
 
 function logoutCurrentUser() {
   localStorage.removeItem(RELAY_CURRENT_USER_KEY);
+  localStorage.removeItem(RELAY_LAST_ACTIVITY_KEY);
 }
 
 // ── Firebase ───────────────────────────────────────────────────────────
@@ -143,10 +147,40 @@ function deleteCurrentAccount() {
 
 // ── Page guards ────────────────────────────────────────────────────────
 
+function privacyLockEnabled() {
+  try { return localStorage.getItem(RELAY_PRIVACY_LOCK_KEY) === "true"; } catch { return false; }
+}
+
+function updateLastActivity() {
+  if (!privacyLockEnabled() || !getCurrentUser()) return;
+  try { localStorage.setItem(RELAY_LAST_ACTIVITY_KEY, String(Date.now())); } catch { /* storage blocked */ }
+}
+
+function enforceIdleLock() {
+  if (!privacyLockEnabled() || !getCurrentUser()) return false;
+  const last = Number(localStorage.getItem(RELAY_LAST_ACTIVITY_KEY) || Date.now());
+  if (Date.now() - last > RELAY_IDLE_TIMEOUT_MS) {
+    logoutCurrentUser();
+    window.location.href = "login.html?locked=1";
+    return true;
+  }
+  return false;
+}
+
+function startPrivacyLockWatch() {
+  if (!privacyLockEnabled() || !getCurrentUser()) return;
+  ["click", "keydown", "pointerdown", "touchstart"].forEach((eventName) => {
+    document.addEventListener(eventName, updateLastActivity, { passive: true });
+  });
+  updateLastActivity();
+  window.setInterval(enforceIdleLock, 60000);
+}
+
 function requireLoginForPage() {
   const isProtected = isOnPage("chat.html") || isOnPage("settings.html");
   if (!isProtected) return;
   if (!getCurrentUser()) window.location.href = "login.html";
+  else enforceIdleLock();
 }
 
 function showStorageWarning() {
@@ -307,7 +341,7 @@ function runLogin() {
     const user = findUserByEmail(email);
 
     if (!user) {
-      formMessage.textContent = "No account found with this email.";
+      formMessage.textContent = "Email or password is incorrect.";
       formMessage.className = "form-message error";
       return;
     }
@@ -318,7 +352,7 @@ function runLogin() {
 
       const passwordMatch = await verifyStoredPassword(password, user.passwordHash);
       if (!passwordMatch) {
-        formMessage.textContent = "Wrong password.";
+        formMessage.textContent = "Email or password is incorrect.";
         formMessage.className = "form-message error";
         return;
       }
@@ -346,6 +380,7 @@ function initAuth() {
   runSignup();
   runLogin();
   setupPasswordToggles();
+  startPrivacyLockWatch();
 }
 
 if (document.readyState === "loading") {
