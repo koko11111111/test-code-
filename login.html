@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Log In | Relay</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="styles.css">
+  <script src="theme.js"></script>
+</head>
+<body>
+  <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle theme">☀️</button>
+
+  <main class="rl-auth-layout">
+    <section class="rl-auth-card">
+      <a class="rl-back-link" href="index.html">← Back</a>
+
+      <svg class="rl-mini-pulse" viewBox="0 0 400 110" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Relay signal animation">
+        <path id="rl-pulse-path-login" d="M50,55 Q200,15 350,55" fill="none" stroke="var(--line)" stroke-width="2" stroke-dasharray="2 7" stroke-linecap="round"/>
+        <circle cx="50" cy="55" r="16" fill="var(--surface-2)" stroke="var(--line)" stroke-width="1.5"/>
+        <circle cx="350" cy="55" r="16" fill="var(--surface-2)" stroke="var(--line)" stroke-width="1.5"/>
+        <circle class="rl-pulse-dot" r="4" fill="var(--signal)">
+          <animateMotion dur="2.6s" repeatCount="indefinite">
+            <mpath href="#rl-pulse-path-login"/>
+          </animateMotion>
+        </circle>
+      </svg>
+
+      <h1>Log In</h1>
+      <p class="rl-sub">Pick up where you left off.</p>
+
+      <form class="rl-form" id="login-form" novalidate>
+        <label for="login-email">Email</label>
+        <input id="login-email" name="email" type="email" placeholder="you@example.com" required autocomplete="email">
+
+        <label for="login-password">Password</label>
+        <div class="password-field">
+          <input id="login-password" name="password" type="password" placeholder="Enter your password" required autocomplete="current-password">
+          <button type="button" class="password-toggle" data-target="login-password" aria-label="Show password">🙈</button>
+        </div>
+
+        <label class="remember-row" for="remember-me">
+          <input id="remember-me" name="rememberMe" type="checkbox">
+          Remember me on this device
+        </label>
+
+        <p id="login-message" class="form-message" aria-live="polite"></p>
+        <button type="submit" class="btn btn-primary btn-full">Log In</button>
+      </form>
+
+      <p class="rl-footer-text">Don't have an account? <a href="signup.html">Create one</a></p>
+    </section>
+  </main>
+
+  <script src="config.js"></script>
+  <script src="crypto-utils.js"></script>
+  <script src="auth.js" defer></script>
+</body>
+</html>

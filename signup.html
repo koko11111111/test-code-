@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign Up | Relay</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="styles.css">
+  <script src="theme.js"></script>
+</head>
+<body>
+  <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle theme">☀️</button>
+
+  <main class="rl-auth-layout">
+    <section class="rl-auth-card">
+      <a class="rl-back-link" href="index.html">← Back</a>
+
+      <svg class="rl-mini-pulse" viewBox="0 0 400 110" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Relay signal animation">
+        <path id="rl-pulse-path-signup" d="M50,55 Q200,15 350,55" fill="none" stroke="var(--line)" stroke-width="2" stroke-dasharray="2 7" stroke-linecap="round"/>
+        <circle cx="50" cy="55" r="16" fill="var(--surface-2)" stroke="var(--line)" stroke-width="1.5"/>
+        <circle cx="350" cy="55" r="16" fill="var(--surface-2)" stroke="var(--line)" stroke-width="1.5"/>
+        <circle class="rl-pulse-dot" r="4" fill="var(--signal)">
+          <animateMotion dur="2.6s" repeatCount="indefinite">
+            <mpath href="#rl-pulse-path-signup"/>
+          </animateMotion>
+        </circle>
+      </svg>
+
+      <h1>Sign Up</h1>
+      <p class="rl-sub">Get on the line in under a minute.</p>
+
+      <form class="rl-form" id="signup-form" novalidate>
+        <label for="signup-name">Full Name</label>
+        <input id="signup-name" name="name" type="text" placeholder="Ada Lovelace" required autocomplete="name">
+
+        <label for="signup-email">Email</label>
+        <input id="signup-email" name="email" type="email" placeholder="you@example.com" required autocomplete="email">
+
+        <label for="signup-password">Password</label>
+        <div class="password-field">
+          <input id="signup-password" name="password" type="password" placeholder="Create a password" required autocomplete="new-password">
+          <button type="button" class="password-toggle" data-target="signup-password" aria-label="Show password">🙈</button>
+        </div>
+        <p class="field-hint">At least 8 characters with uppercase, lowercase, a number, and a symbol.</p>
+        <p id="password-strength" class="rl-strength" aria-live="polite"></p>
+
+        <label for="signup-confirm-password">Confirm Password</label>
+        <div class="password-field">
+          <input id="signup-confirm-password" name="confirmPassword" type="password" placeholder="Type it again" required autocomplete="new-password">
+          <button type="button" class="password-toggle" data-target="signup-confirm-password" aria-label="Show password">🙈</button>
+        </div>
+
+        <p id="signup-message" class="form-message" aria-live="polite"></p>
+        <button type="submit" class="btn btn-primary btn-full">Create Account</button>
+      </form>
+
+      <p class="rl-footer-text">Already have an account? <a href="login.html">Log in</a></p>
+    </section>
+  </main>
+
+  <script src="config.js"></script>
+  <script src="crypto-utils.js"></script>
+  <script src="auth.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Relay — real-time messaging</title>
+  <meta name="description" content="Relay is real-time messaging with friends: text, photos, and reactions that land the second you hit send.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="styles.css">
+  <script src="theme.js"></script>
+</head>
+<body>
+  <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle theme">☀️</button>
+
+  <main class="rl-landing">
+    <p class="rl-wordmark">REL<strong>AY</strong></p>
+
+    <svg class="rl-pulse-wrap" viewBox="0 0 400 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Animated signal traveling between two message nodes">
+      <path id="rl-pulse-path" d="M50,95 Q200,35 350,95" fill="none" stroke="var(--line)" stroke-width="2" stroke-dasharray="2 7" stroke-linecap="round"/>
+      <circle cx="50" cy="95" r="22" fill="var(--surface-2)" stroke="var(--line)" stroke-width="1.5"/>
+      <circle cx="350" cy="95" r="22" fill="var(--surface-2)" stroke="var(--line)" stroke-width="1.5"/>
+      <text x="50" y="100" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-weight="700" font-size="16" fill="var(--text)">Y</text>
+      <text x="350" y="100" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-weight="700" font-size="16" fill="var(--text)">F</text>
+      <text x="50" y="132" text-anchor="middle" class="rl-pulse-node-label">YOU</text>
+      <text x="350" y="132" text-anchor="middle" class="rl-pulse-node-label">FRIEND</text>
+      <circle class="rl-pulse-dot" r="5" fill="var(--signal)">
+        <animateMotion dur="2.6s" repeatCount="indefinite">
+          <mpath href="#rl-pulse-path"/>
+        </animateMotion>
+      </circle>
+      <circle class="rl-pulse-dot" r="5" fill="var(--signal)" opacity="0.5">
+        <animateMotion dur="2.6s" repeatCount="indefinite" begin="1.3s">
+          <mpath href="#rl-pulse-path"/>
+        </animateMotion>
+      </circle>
+    </svg>
+
+    <h1 class="rl-hero-title">Straight through, no static.</h1>
+    <p class="rl-hero-sub">Relay is real-time messaging with friends — text, photos, and reactions that land the second you hit send.</p>
+
+    <div class="rl-cta-row">
+      <a class="btn btn-secondary" href="login.html">Log In</a>
+      <a class="btn btn-primary" href="signup.html">Sign Up</a>
+    </div>
+
+    <p class="rl-ticker">REAL-TIME <span class="dot">·</span> PHOTOS <span class="dot">·</span> REACTIONS <span class="dot">·</span> READ RECEIPTS</p>
+  </main>
+</body>
+</html>

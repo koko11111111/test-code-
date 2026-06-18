@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Relay</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="styles.css">
+  <script src="theme.js"></script>
+</head>
+<body>
+  <div class="rl-app" id="rl-app">
+
+    <aside class="rl-side" id="rl-side">
+      <div class="rl-side-head">
+        <div class="rl-brand"><span class="rl-brand-dot"></span>Relay</div>
+        <div class="rl-side-actions">
+          <button class="rl-icon-btn theme-toggle" id="theme-toggle" type="button" aria-label="Toggle theme">☀️</button>
+        </div>
+      </div>
+
+      <div class="rl-search-wrap">
+        <input type="search" id="user-search-input" placeholder="Search people to message…" autocomplete="off">
+        <div class="rl-search-results hidden" id="user-search-results"></div>
+      </div>
+
+      <div class="rl-convs" id="conversations-list">
+        <p class="rl-hint" id="conversations-empty-hint">No conversations yet. Search for someone above to send your first message.</p>
+      </div>
+
+      <div class="rl-side-profile" id="side-profile-toggle">
+        <span id="my-avatar-slot"></span>
+        <div>
+          <p class="rl-side-profile-name" id="my-name">…</p>
+          <p class="rl-side-profile-email" id="my-email"></p>
+        </div>
+        <div class="rl-side-dropdown hidden" id="side-dropdown">
+          <a class="rl-drop-item" href="settings.html">Settings</a>
+          <button class="rl-drop-item" id="logout-btn" type="button">Log Out</button>
+        </div>
+      </div>
+    </aside>
+
+    <main class="rl-main" id="rl-main">
+      <section class="rl-empty-state" id="empty-state">
+        <h2>Pick a conversation</h2>
+        <p>Search for someone by name or email to start chatting, or choose an existing conversation from the list.</p>
+      </section>
+
+      <section class="rl-chat-view hidden" id="chat-view">
+        <div class="rl-chat-head">
+          <button class="rl-back-btn" id="back-btn" type="button" aria-label="Back to conversations">←</button>
+          <div class="rl-peer-info">
+            <span id="peer-avatar-slot"></span>
+            <div>
+              <p class="rl-peer-name" id="peer-name"></p>
+              <p class="rl-peer-sub" id="peer-sub"></p>
+            </div>
+          </div>
+          <button class="rl-icon-btn" id="chat-search-toggle" type="button" aria-label="Search in conversation">🔍</button>
+        </div>
+
+        <div class="rl-search-bar hidden" id="chat-search-bar">
+          <input type="search" id="chat-search-input" placeholder="Search this conversation…" autocomplete="off">
+          <span class="rl-search-match-count" id="chat-search-count"></span>
+          <button class="rl-icon-btn" id="chat-search-close" type="button" aria-label="Close search">✕</button>
+        </div>
+
+        <div class="rl-msgs" id="messages-list"></div>
+
+        <div class="rl-img-preview-wrap hidden" id="image-preview-wrap">
+          <img id="image-preview" alt="Attached image preview">
+          <span style="font-size:.78rem;color:var(--text-muted)">Image attached</span>
+          <button id="remove-image-btn" type="button" aria-label="Remove image">✕</button>
+        </div>
+
+        <form class="rl-compose" id="compose-form">
+          <label class="rl-attach-btn" for="image-input" aria-label="Attach image" title="Attach image">📎</label>
+          <input type="file" id="image-input" accept="image/*" class="hidden">
+          <input type="text" class="rl-text-input" id="message-input" placeholder="Write a message…" autocomplete="off" maxlength="4000">
+          <button class="rl-send-btn" type="submit" aria-label="Send message">➤</button>
+        </form>
+        <p class="form-message error hidden" id="compose-error" style="padding:0 1.3rem .6rem"></p>
+      </section>
+    </main>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="config.js"></script>
+  <script src="auth.js"></script>
+  <script src="chat.js"></script>
+</body>
+</html>
