@@ -13,6 +13,8 @@
   const ONLINE_WINDOW_MS = 60000;
   const MAX_IMAGE_DIMENSION = 1024;
   const MAX_IMAGE_BYTES_OUT = 700000;
+  const MAX_VOICE_MS = 60000;
+  const MAX_VOICE_BYTES_OUT = 900000;
 
   // ---- dom refs ----
   const appEl = document.getElementById("rl-app");
@@ -35,6 +37,7 @@
   const peerAvatarSlot = document.getElementById("peer-avatar-slot");
   const peerNameEl = document.getElementById("peer-name");
   const peerSubEl = document.getElementById("peer-sub");
+  const notificationsToggle = document.getElementById("notifications-toggle");
   const chatSearchToggle = document.getElementById("chat-search-toggle");
   const chatSearchBar = document.getElementById("chat-search-bar");
   const chatSearchInput = document.getElementById("chat-search-input");
@@ -45,6 +48,11 @@
   const imagePreviewWrap = document.getElementById("image-preview-wrap");
   const imagePreviewImg = document.getElementById("image-preview");
   const removeImageBtn = document.getElementById("remove-image-btn");
+  const voicePreviewWrap = document.getElementById("voice-preview-wrap");
+  const voicePreviewAudio = document.getElementById("voice-preview");
+  const voicePreviewLabel = document.getElementById("voice-preview-label");
+  const removeVoiceBtn = document.getElementById("remove-voice-btn");
+  const voiceRecordBtn = document.getElementById("voice-record-btn");
   const composeForm = document.getElementById("compose-form");
   const messageInput = document.getElementById("message-input");
   const imageInput = document.getElementById("image-input");
@@ -59,10 +67,19 @@
   let currentPeer = null;
   let currentMessages = [];
   let pendingImageDataUrl = null;
+  let pendingVoiceDataUrl = null;
+  let pendingVoiceType = "";
+  let pendingVoiceDurationMs = 0;
+  let mediaRecorder = null;
+  let mediaStream = null;
+  let voiceChunks = [];
+  let voiceStartedAt = 0;
+  let voiceStopTimer = null;
   let chatSearchQuery = "";
   let isTypingFlag = false;
   let typingClearTimer = null;
   let currentPeerTyping = false;
+  let newestMessageSeenAt = 0;
 
   let unsubConvDoc = null;
   let unsubPeerDoc = null;
@@ -341,6 +358,7 @@
     unsubMessages = convRef.collection("messages").orderBy("createdAt", "asc").limitToLast(200)
       .onSnapshot((snap) => {
         currentMessages = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        notifyForIncomingMessages(currentMessages);
         markVisibleMessagesRead();
         renderMessages();
       }, (err) => {
@@ -399,6 +417,10 @@
       let bubbleInner = "";
       if (msg.text) bubbleInner += `<div>${escapeAuthHtml(msg.text).replaceAll("\n", "<br>")}</div>`;
       if (msg.imageUrl) bubbleInner += `<img class="rl-msg-img" src="${msg.imageUrl}" alt="Shared photo">`;
+      if (msg.audioUrl) {
+        const duration = msg.audioDurationMs ? ` · ${formatDuration(msg.audioDurationMs)}` : "";
+        bubbleInner += `<div class="rl-voice-message"><span>Voice message${duration}</span><audio controls preload="metadata" src="${msg.audioUrl}"></audio></div>`;
+      }
 
       const reactions = msg.reactions || {};
       const reactionEntries = Object.entries(reactions).filter(([, emails]) => emails && emails.length > 0);
@@ -496,6 +518,29 @@
     db.collection("conversations").doc(currentConvId).collection("messages").doc(msgId).delete().catch(() => {});
   }
 
+  // ---- browser notifications ----
+  function notifyForIncomingMessages(messages) {
+    if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
+    if (!document.hidden || messages.length === 0) return;
+    const latest = messages[messages.length - 1];
+    if (!latest || latest.sender === me.email || !latest.createdAt || typeof latest.createdAt.toMillis !== "function") return;
+    const latestMs = latest.createdAt.toMillis();
+    if (latestMs <= newestMessageSeenAt) return;
+    newestMessageSeenAt = latestMs;
+    const body = latest.text || (latest.imageUrl ? "Sent a photo" : "New message");
+    new Notification(currentPeer && (currentPeer.name || currentPeer.email) || "Relay", {
+      body: body.length > 120 ? body.slice(0, 117) + "…" : body,
+      tag: currentConvId || "relay-message",
+    });
+  }
+
+  function updateNotificationButton() {
+    if (!notificationsToggle) return;
+    if (typeof Notification === "undefined") { notificationsToggle.classList.add("hidden"); return; }
+    notificationsToggle.textContent = Notification.permission === "granted" ? "🔕" : "🔔";
+    notificationsToggle.title = Notification.permission === "granted" ? "Notifications enabled" : "Enable notifications";
+  }
+
   // ---- typing indicator (mine) ----
   function notifyTyping(active) {
     if (!currentConvId || isTypingFlag === active) return;
@@ -562,10 +607,118 @@
     imagePreviewImg.src = "";
   }
 
+  // ---- voice recording ----
+  function formatDuration(ms) {
+    const totalSeconds = Math.max(0, Math.round((ms || 0) / 1000));
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = String(totalSeconds % 60).padStart(2, "0");
+    return `${mins}:${secs}`;
+  }
+
+  function voiceMimeType() {
+    if (typeof MediaRecorder === "undefined") return "";
+    const types = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"];
+    return types.find((type) => MediaRecorder.isTypeSupported(type)) || "";
+  }
+
+  function blobToDataUrl(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error("Could not read recording"));
+      reader.onload = () => resolve(reader.result);
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  function renderVoicePreview() {
+    if (!pendingVoiceDataUrl) {
+      voicePreviewWrap.classList.add("hidden");
+      voicePreviewAudio.removeAttribute("src");
+      voicePreviewLabel.textContent = "Voice message ready";
+      return;
+    }
+    voicePreviewAudio.src = pendingVoiceDataUrl;
+    voicePreviewLabel.textContent = `Voice message ready · ${formatDuration(pendingVoiceDurationMs)}`;
+    voicePreviewWrap.classList.remove("hidden");
+  }
+
+  function clearPendingVoice() {
+    pendingVoiceDataUrl = null;
+    pendingVoiceType = "";
+    pendingVoiceDurationMs = 0;
+    renderVoicePreview();
+  }
+
+  function stopVoiceTracks() {
+    if (mediaStream) mediaStream.getTracks().forEach((track) => track.stop());
+    mediaStream = null;
+  }
+
+  function updateVoiceButton(recording) {
+    if (!voiceRecordBtn) return;
+    voiceRecordBtn.classList.toggle("recording", recording);
+    voiceRecordBtn.textContent = recording ? "■" : "🎙";
+    voiceRecordBtn.setAttribute("aria-label", recording ? "Stop recording" : "Record voice message");
+    voiceRecordBtn.title = recording ? "Stop recording" : "Record voice message";
+  }
+
+  async function startVoiceRecording() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === "undefined") {
+      showComposeError("Voice recording isn't supported in this browser.");
+      return;
+    }
+    if (pendingVoiceDataUrl) clearPendingVoice();
+    try {
+      mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      voiceChunks = [];
+      const mimeType = voiceMimeType();
+      mediaRecorder = new MediaRecorder(mediaStream, mimeType ? { mimeType } : undefined);
+      voiceStartedAt = Date.now();
+      mediaRecorder.ondataavailable = (event) => { if (event.data && event.data.size > 0) voiceChunks.push(event.data); };
+      mediaRecorder.onstop = handleVoiceStop;
+      mediaRecorder.start();
+      updateVoiceButton(true);
+      voiceStopTimer = window.setTimeout(() => stopVoiceRecording(), MAX_VOICE_MS);
+    } catch (error) {
+      stopVoiceTracks();
+      showComposeError("Microphone access was blocked or unavailable.");
+    }
+  }
+
+  async function handleVoiceStop() {
+    window.clearTimeout(voiceStopTimer);
+    updateVoiceButton(false);
+    stopVoiceTracks();
+    const type = (mediaRecorder && mediaRecorder.mimeType) || voiceMimeType() || "audio/webm";
+    mediaRecorder = null;
+    if (voiceChunks.length === 0) { showComposeError("No audio was recorded."); return; }
+    const duration = Date.now() - voiceStartedAt;
+    const blob = new Blob(voiceChunks, { type });
+    voiceChunks = [];
+    if (blob.size > MAX_VOICE_BYTES_OUT) { showComposeError("Voice message is too long. Keep it under 60 seconds."); return; }
+    try {
+      pendingVoiceDataUrl = await blobToDataUrl(blob);
+      pendingVoiceType = type;
+      pendingVoiceDurationMs = duration;
+      renderVoicePreview();
+    } catch (error) {
+      showComposeError("Couldn't prepare that voice message.");
+    }
+  }
+
+  function stopVoiceRecording() {
+    if (mediaRecorder && mediaRecorder.state !== "inactive") mediaRecorder.stop();
+  }
+
+  function toggleVoiceRecording() {
+    if (mediaRecorder && mediaRecorder.state === "recording") stopVoiceRecording();
+    else startVoiceRecording();
+  }
+
   // ---- sending ----
   async function sendMessage() {
     const text = messageInput.value.trim();
-    if (!text && !pendingImageDataUrl) return;
+    if (!text && !pendingImageDataUrl && !pendingVoiceDataUrl) return;
     if (!currentConvId) return;
 
     const convRef = db.collection("conversations").doc(currentConvId);
@@ -573,6 +726,9 @@
       sender: me.email,
       text: text || null,
       imageUrl: pendingImageDataUrl || null,
+      audioUrl: pendingVoiceDataUrl || null,
+      audioType: pendingVoiceType || null,
+      audioDurationMs: pendingVoiceDurationMs || null,
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
       reactions: {},
       readBy: [me.email],
@@ -580,13 +736,15 @@
 
     messageInput.value = "";
     const imageToSend = pendingImageDataUrl;
+    const voiceToSend = pendingVoiceDataUrl;
     clearPendingImage();
+    clearPendingVoice();
     notifyTyping(false);
 
     try {
       await convRef.collection("messages").add(message);
       await convRef.update({
-        lastMessage: text || (imageToSend ? "📷 Photo" : ""),
+        lastMessage: text || (imageToSend ? "📷 Photo" : (voiceToSend ? "🎙 Voice message" : "")),
         lastAt: firebase.firestore.FieldValue.serverTimestamp(),
         lastSender: me.email,
         [`unread_${emailKey(currentPeer.email)}`]: firebase.firestore.FieldValue.increment(1),
@@ -630,6 +788,13 @@
       if (allUsersCache.length === 0) loadAllUsers();
     });
 
+    updateNotificationButton();
+    if (notificationsToggle) notificationsToggle.addEventListener("click", async () => {
+      if (typeof Notification === "undefined") return;
+      if (Notification.permission === "default") await Notification.requestPermission();
+      updateNotificationButton();
+    });
+
     backBtn.addEventListener("click", () => appEl.classList.remove("rl-chat-open"));
 
     chatSearchToggle.addEventListener("click", () => {
@@ -659,6 +824,8 @@
     });
     imageInput.addEventListener("change", handleImageInput);
     removeImageBtn.addEventListener("click", clearPendingImage);
+    if (voiceRecordBtn) voiceRecordBtn.addEventListener("click", toggleVoiceRecording);
+    if (removeVoiceBtn) removeVoiceBtn.addEventListener("click", clearPendingVoice);
   }
 
   // ---- boot ----

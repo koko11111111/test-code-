@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://*.firebaseio.com https://www.googleapis.com; connect-src 'self' https://*.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com; img-src 'self' data: blob:; media-src 'self' data: blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; object-src 'none'; frame-src 'self' https://accounts.google.com; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests">
+  <title>Settings | Relay</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="styles.css">
+  <script src="theme.js"></script>
+</head>
+<body>
+  <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle theme">☀️</button>
+
+  <main class="rl-settings-layout">
+    <section class="rl-settings-card">
+      <a class="rl-back-link" href="chat.html">← Back to chat</a>
+
+      <div class="rl-settings-section">
+        <h1>Settings</h1>
+        <p class="rl-settings-sub">Manage your profile and privacy on this device.</p>
+      </div>
+
+      <div class="rl-settings-section">
+        <h2>Profile</h2>
+        <div class="rl-settings-photo-row">
+          <span id="settings-avatar-slot"></span>
+          <div>
+            <p class="rl-row-label" id="settings-email"></p>
+            <p class="rl-row-sub">Only your display name and avatar are public to other Relay users.</p>
+          </div>
+        </div>
+        <form id="profile-form" novalidate>
+          <label for="display-name">Display name</label>
+          <input id="display-name" type="text" maxlength="80" autocomplete="name" required>
+          <label for="profile-photo">Profile photo</label>
+          <input id="profile-photo" type="file" accept="image/*">
+          <p class="field-hint">Photos are compressed locally before saving.</p>
+          <p id="profile-message" class="form-message" aria-live="polite"></p>
+          <button class="btn btn-primary btn-full" type="submit">Save Profile</button>
+        </form>
+      </div>
+
+      <div class="rl-settings-section">
+        <h2>Security</h2>
+        <div class="rl-theme-row">
+          <div>
+            <p class="rl-row-label">Privacy lock</p>
+            <p class="rl-row-sub">Automatically logs this device out after 30 idle minutes.</p>
+          </div>
+          <label class="rl-switch" for="privacy-lock"><input id="privacy-lock" type="checkbox"><span class="rl-switch-track"></span></label>
+        </div>
+        <p class="rl-security-note">Relay never stores plain-text passwords. Your password is hashed in the browser with PBKDF2 and a unique salt. For production, pair this UI with Firebase Authentication and the Firestore rules in <code>README.md</code>.</p>
+        <button class="btn btn-secondary btn-full" id="logout-all-btn" type="button">Log out on this device</button>
+      </div>
+
+      <div class="rl-settings-section rl-danger-zone">
+        <h2>Danger Zone</h2>
+        <p class="rl-row-sub">Deleting your local account removes it from this browser and removes your public profile from Firestore when configured.</p>
+        <button class="btn btn-danger btn-full" id="delete-account-btn" type="button">Delete Account</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="config.js"></script>
+  <script src="crypto-utils.js"></script>
+  <script src="auth.js"></script>
+  <script src="settings.js"></script>
+</body>
+</html>

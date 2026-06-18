@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://*.firebaseio.com https://www.googleapis.com; connect-src 'self' https://*.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com; img-src 'self' data: blob:; media-src 'self' data: blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; object-src 'none'; frame-src 'self' https://accounts.google.com; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests">
   <title>Relay</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -58,6 +60,7 @@
               <p class="rl-peer-sub" id="peer-sub"></p>
             </div>
           </div>
+          <button class="rl-icon-btn" id="notifications-toggle" type="button" aria-label="Enable notifications" title="Enable notifications">🔔</button>
           <button class="rl-icon-btn" id="chat-search-toggle" type="button" aria-label="Search in conversation">🔍</button>
         </div>
 
@@ -75,9 +78,16 @@
           <button id="remove-image-btn" type="button" aria-label="Remove image">✕</button>
         </div>
 
+        <div class="rl-voice-preview-wrap hidden" id="voice-preview-wrap">
+          <audio id="voice-preview" controls></audio>
+          <span id="voice-preview-label">Voice message ready</span>
+          <button id="remove-voice-btn" type="button" aria-label="Remove voice message">✕</button>
+        </div>
+
         <form class="rl-compose" id="compose-form">
           <label class="rl-attach-btn" for="image-input" aria-label="Attach image" title="Attach image">📎</label>
           <input type="file" id="image-input" accept="image/*" class="hidden">
+          <button class="rl-voice-btn" id="voice-record-btn" type="button" aria-label="Record voice message" title="Record voice message">🎙</button>
           <input type="text" class="rl-text-input" id="message-input" placeholder="Write a message…" autocomplete="off" maxlength="4000">
           <button class="rl-send-btn" type="submit" aria-label="Send message">➤</button>
         </form>
@@ -88,6 +98,7 @@
 
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="config.js"></script>
   <script src="auth.js"></script>
   <script src="chat.js"></script>
