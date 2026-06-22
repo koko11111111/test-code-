@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; connect-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests">
+  <title>Privacy &amp; Terms | Relay</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="styles.css">
+  <script src="theme.js"></script>
+</head>
+<body>
+  <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle theme">☀️</button>
+
+  <main class="rl-settings-layout">
+    <section class="rl-settings-card rl-legal-card">
+      <a class="rl-back-link" href="chat.html">← Back to chat</a>
+
+      <div class="rl-settings-section">
+        <h1>Privacy &amp; Terms</h1>
+        <p class="rl-settings-sub">What Relay actually does with your data — written to match the code, not a generic template.</p>
+        <p class="rl-legal-meta">Last updated: <time datetime="2026-06-21">June 21, 2026</time></p>
+      </div>
+
+      <div class="rl-settings-section">
+        <h2>1. What Relay is</h2>
+        <p class="rl-legal-p">Relay is a small, self-hosted real-time messaging web app. There is no Relay company, server backend, or support team — it runs entirely on whatever Firebase project the person who deployed it configured in <code>config.js</code>. If you're using a Relay instance someone else set up, that person or organization controls the Firebase project your data lives in, and you should ask them directly if you have questions about how it's run.</p>
+      </div>
+
+      <div class="rl-settings-section">
+        <h2>2. Information we store</h2>
+        <p class="rl-legal-p">When Firebase is configured, creating an account and using Relay stores the following in that Firebase project's Authentication and Firestore database:</p>
+        <ul class="rl-legal-list">
+          <li><strong>Account info:</strong> your name, email address, and (if you sign in with Google) the profile photo Google provides.</li>
+          <li><strong>Public profile:</strong> your display name, email, avatar, account creation time, and a "last active" timestamp, stored in a <code>users</code> collection so other people on the same Relay instance can find you to start a conversation.</li>
+          <li><strong>Messages:</strong> text messages, image attachments, and voice messages you send, stored in a <code>conversations</code> collection. Images and voice messages are compressed in your browser before upload (images resized and capped around 700KB; voice messages capped at 60 seconds and around 900KB) but are <strong>not encrypted</strong> — they are stored as plain Firestore data, readable by anyone with backend access to that Firebase project.</li>
+          <li><strong>Message metadata:</strong> who sent a message, when, emoji reactions, and read receipts (whether the recipient has seen it).</li>
+          <li><strong>Friend requests and friends list:</strong> if you send or receive a friend request, the two email addresses involved and the request status (pending/accepted/declined) are stored in a <code>friendRequests</code> collection, and accepted friends are listed on each user's profile document.</li>
+          <li><strong>Blocked users:</strong> if you block someone, their email address is added to a private <code>blocked</code> list on your own profile document. This list is never shown to the person you blocked — they are not notified, they simply can no longer message you and stop appearing in your search results (and you stop appearing in theirs).</li>
+          <li><strong>Local device data:</strong> if Firebase isn't configured, Relay falls back to storing accounts directly in your browser's <code>localStorage</code> — passwords are never stored in plain text in this mode; they're hashed with PBKDF2 (100,000 iterations, SHA-256) and a random per-account salt before being saved. This data never leaves your device in fallback mode.</li>
+          <li><strong>Theme and login convenience:</strong> your light/dark theme choice, and — only if you check "Remember me" — your email address, are stored in <code>localStorage</code> so the login form can pre-fill it next time.</li>
+          <li><strong>Privacy lock state:</strong> if you turn on the optional privacy lock in Settings, Relay stores a timestamp of your last activity in <code>localStorage</code> to auto-log-out the device after 30 idle minutes.</li>
+        </ul>
+      </div>
+
+      <div class="rl-settings-section">
+        <h2>3. What we don't do</h2>
+        <ul class="rl-legal-list">
+          <li>No analytics, ad tracking, or third-party tracking scripts of any kind are included in Relay's code.</li>
+          <li>No advertising — Relay doesn't show ads or sell data to advertisers.</li>
+          <li>No message content is end-to-end encrypted. Anyone with administrative access to the underlying Firebase project (typically, whoever deployed this instance) can technically read stored messages, images, and voice notes.</li>
+          <li>Friends-list visibility is purely a convenience feature — being someone's "friend" or not does not currently restrict who can message you. Anyone with an account on the same instance can search for you and start a conversation.</li>
+        </ul>
+      </div>
+
+      <div class="rl-settings-section">
+        <h2>4. Third parties involved</h2>
+        <p class="rl-legal-p">Relay's code only ever talks to two outside services, governed by their own privacy policies:</p>
+        <ul class="rl-legal-list">
+          <li><strong>Google Fonts</strong> (<code>fonts.googleapis.com</code>, <code>fonts.gstatic.com</code>) — loads the typefaces used on every page. Google may log the request (e.g. IP address) as with any font request.</li>
+          <li><strong>Firebase / Google Cloud</strong> (<code>*.firebaseio.com</code>, <code>*.googleapis.com</code>, including Identity Toolkit and Secure Token services) — provides account authentication (email/password and "Continue with Google") and the Firestore database that stores profiles, messages, and friend data described above. See <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">Google's Privacy Policy</a> for how Google/Firebase itself handles infrastructure-level data.</li>
+        </ul>
+        <p class="rl-legal-p">Relay does not integrate any other analytics, advertising, payment, or social media SDKs.</p>
+      </div>
+
+      <div class="rl-settings-section">
+        <h2>5. Your choices and controls</h2>
+        <ul class="rl-legal-list">
+          <li><strong>Edit your profile</strong> (display name, photo) any time from Settings.</li>
+          <li><strong>Delete a message</strong> you sent at any time from the chat view.</li>
+          <li><strong>Remove a friend</strong> any time from the Friends panel — this deletes the friend-request record and removes the connection from both accounts.</li>
+          <li><strong>Block or unblock someone</strong> any time from a conversation's "⋯" menu or from Settings → Blocked Users. Blocking also ends any friendship with that person.</li>
+          <li><strong>Turn on the privacy lock</strong> in Settings to auto-log-out an idle device after 30 minutes.</li>
+          <li><strong>Delete your account</strong> from Settings → Danger Zone. This removes your local account record, deletes your public Firestore profile document, and deletes the underlying Firebase Authentication account when applicable. It does <strong>not</strong> retroactively delete messages you already sent in shared conversations, since those are part of the conversation history other participants can see.</li>
+        </ul>
+      </div>
+
+      <div class="rl-settings-section">
+        <h2>6. Children</h2>
+        <p class="rl-legal-p">Relay does not knowingly collect information from children and has no age-verification mechanism. If this instance is intended for use by anyone under the age of 13 (or the relevant age of digital consent in your region), the operator of this Firebase project is responsible for adding appropriate safeguards.</p>
+      </div>
+
+      <div class="rl-settings-section">
+        <h2>7. Terms of use</h2>
+        <ul class="rl-legal-list">
+          <li>Relay is provided "as is," as a static front-end demo/template, with no uptime guarantee, warranty, or service-level commitment.</li>
+          <li>You're responsible for the content you send through Relay and for keeping your password (or Google account) secure.</li>
+          <li>Because messages aren't end-to-end encrypted, don't send anything through Relay you wouldn't be comfortable being readable by the operator of the Firebase project backing this instance.</li>
+          <li>The operator of this Relay instance may suspend or remove accounts or content at their discretion, since they control the underlying Firebase project.</li>
+        </ul>
+      </div>
+
+      <div class="rl-settings-section">
+        <h2>8. Changes to this page</h2>
+        <p class="rl-legal-p">If the operator of this Relay instance changes what data the app collects or how it's handled, this page should be updated to match — it's a static file in the same codebase as the rest of the app (<code>privacy.html</code>), not a separately hosted legal document.</p>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

@@ -57,6 +57,15 @@
         <button class="btn btn-secondary btn-full" id="logout-all-btn" type="button">Log out on this device</button>
       </div>
 
+      <!-- ADDED: block system — blocked users list -->
+      <div class="rl-settings-section">
+        <h2>Blocked Users</h2>
+        <p class="rl-row-sub">Blocked users can't message you and won't show up in search. They aren't told they've been blocked.</p>
+        <div id="blocked-users-list">
+          <p class="rl-hint" id="blocked-users-empty">You haven't blocked anyone.</p>
+        </div>
+      </div>
+
       <div class="rl-settings-section rl-danger-zone">
         <h2>Danger Zone</h2>
         <p class="rl-row-sub">Deleting your local account removes it from this browser and removes your public profile from Firestore when configured.</p>
@@ -71,6 +80,7 @@
   <script src="config.js"></script>
   <script src="crypto-utils.js"></script>
   <script src="auth.js"></script>
+  <script src="block.js"></script>
   <script src="settings.js"></script>
 </body>
 </html>

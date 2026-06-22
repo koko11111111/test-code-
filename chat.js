@@ -195,6 +195,10 @@
     if (!db) return Promise.resolve();
     return db.collection("users").get().then((snap) => {
       allUsersCache = snap.docs.map((d) => d.data()).filter((u) => u.email && u.email !== me.email);
+      // ADDED: block system — hide anyone blocked in either direction from search.
+      if (window.RelayBlock) {
+        allUsersCache = allUsersCache.filter((u) => !window.RelayBlock.isBlockedEitherWay(u.email));
+      }
     }).catch(() => {});
   }
 
@@ -721,6 +725,12 @@
     if (!text && !pendingImageDataUrl && !pendingVoiceDataUrl) return;
     if (!currentConvId) return;
 
+    // ADDED: block system — stop the send if either side has blocked the other.
+    if (window.RelayBlock && currentPeer && window.RelayBlock.isBlockedEitherWay(currentPeer.email)) {
+      showComposeError("You can't message this person.");
+      return;
+    }
+
     const convRef = db.collection("conversations").doc(currentConvId);
     const message = {
       sender: me.email,
@@ -849,4 +859,11 @@
   }
 
   init();
+
+  // ── ADDED: friend-system integration hook ───────────────────────────
+  // Exposes the existing openConversationWith() so friends.js can start a
+  // chat from the Friends panel without duplicating conversation-creation
+  // logic. Nothing above this line was changed.
+  window.RelayChat = window.RelayChat || {};
+  window.RelayChat.openConversationWith = openConversationWith;
 })();

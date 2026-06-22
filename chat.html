@@ -28,8 +28,36 @@
         <div class="rl-search-results hidden" id="user-search-results"></div>
       </div>
 
+      <!-- ADDED: friend system — tab toggle between Chats and Friends -->
+      <div class="rl-side-tabs">
+        <button class="rl-side-tab active" id="conversations-tab-btn" type="button">Chats</button>
+        <button class="rl-side-tab" id="friends-tab-btn" type="button">Friends <span class="rl-friends-badge hidden" id="friends-badge"></span></button>
+      </div>
+
       <div class="rl-convs" id="conversations-list">
         <p class="rl-hint" id="conversations-empty-hint">No conversations yet. Search for someone above to send your first message.</p>
+      </div>
+
+      <!-- ADDED: friend system — friends panel (search, requests, friends list) -->
+      <div class="rl-friends-panel hidden" id="friends-panel">
+        <div class="rl-search-wrap">
+          <input type="search" id="friend-search-input" placeholder="Search people to add…" autocomplete="off">
+          <div class="rl-search-results hidden" id="friend-search-results"></div>
+        </div>
+
+        <div class="rl-friends-section">
+          <p class="rl-friends-heading">Requests</p>
+          <div id="incoming-requests-list">
+            <p class="rl-hint" id="incoming-requests-empty">No pending friend requests.</p>
+          </div>
+        </div>
+
+        <div class="rl-friends-section">
+          <p class="rl-friends-heading">Your friends</p>
+          <div id="friends-list">
+            <p class="rl-hint" id="friends-list-empty">No friends yet. Search above to send a request.</p>
+          </div>
+        </div>
       </div>
 
       <div class="rl-side-profile" id="side-profile-toggle">
@@ -40,6 +68,7 @@
         </div>
         <div class="rl-side-dropdown hidden" id="side-dropdown">
           <a class="rl-drop-item" href="settings.html">Settings</a>
+          <a class="rl-drop-item" href="privacy.html">Privacy &amp; Terms</a>
           <button class="rl-drop-item" id="logout-btn" type="button">Log Out</button>
         </div>
       </div>
@@ -63,6 +92,13 @@
           </div>
           <button class="rl-icon-btn" id="notifications-toggle" type="button" aria-label="Enable notifications" title="Enable notifications">🔔</button>
           <button class="rl-icon-btn" id="chat-search-toggle" type="button" aria-label="Search in conversation">🔍</button>
+          <!-- ADDED: block system — peer options menu -->
+          <div class="rl-peer-menu-wrap">
+            <button class="rl-icon-btn" id="peer-menu-toggle" type="button" aria-label="Conversation options">⋯</button>
+            <div class="rl-peer-menu hidden" id="peer-menu">
+              <button class="rl-drop-item rl-block-btn" id="block-peer-btn" type="button">Block</button>
+            </div>
+          </div>
         </div>
 
         <div class="rl-search-bar hidden" id="chat-search-bar">
@@ -102,6 +138,8 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="config.js"></script>
   <script src="auth.js"></script>
+  <script src="block.js"></script>
   <script src="chat.js"></script>
+  <script src="friends.js"></script>
 </body>
 </html>

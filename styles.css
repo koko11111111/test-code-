@@ -398,3 +398,78 @@ input:focus, textarea:focus { border-color: var(--signal); outline: none; }
 .rl-voice-message { display: flex; flex-direction: column; gap: .35rem; min-width: min(260px, 62vw); }
 .rl-voice-message span { font-size: .78rem; opacity: .82; }
 .rl-voice-message audio { width: 100%; height: 34px; }
+
+/* ============================================================
+   ADDED: Friends system
+   Tab toggle (Chats / Friends) + friend request rows + friends list.
+   Reuses existing tokens (--surface, --line, --signal, etc.) so it
+   matches the rest of the app instead of introducing new colors.
+   ============================================================ */
+.rl-side-tabs {
+  display: flex; gap: .4rem; padding: 0 1.1rem .7rem;
+}
+.rl-side-tab {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: .35rem;
+  background: transparent; border: 1px solid var(--line); color: var(--text-muted);
+  font-size: .82rem; font-weight: 600; padding: .5rem .6rem; border-radius: var(--radius-sm);
+  cursor: pointer; transition: border-color .15s ease, color .15s ease, background-color .15s ease;
+}
+.rl-side-tab:hover { color: var(--text); }
+.rl-side-tab.active { background: var(--signal-soft); border-color: var(--signal); color: var(--signal); }
+.rl-friends-badge {
+  display: inline-flex; min-width: 16px; height: 16px; padding: 0 4px;
+  border-radius: 999px; background: var(--signal); color: #1A1206;
+  font-size: .64rem; font-weight: 700; align-items: center; justify-content: center;
+}
+
+.rl-friends-panel { flex: 1; overflow-y: auto; padding: 0 .5rem .5rem; display: flex; flex-direction: column; gap: .2rem; }
+.rl-friends-section { padding: .4rem .6rem .2rem; }
+.rl-friends-heading {
+  font-family: var(--font-mono); font-size: .68rem; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--text-muted); margin-bottom: .4rem;
+}
+.rl-friend-row {
+  display: flex; align-items: center; gap: .65rem; padding: .55rem .4rem; border-radius: var(--radius-sm);
+}
+.rl-friend-row:hover { background: var(--surface-2); }
+.rl-friend-actions { display: flex; align-items: center; gap: .35rem; flex-shrink: 0; }
+.rl-friend-status { font-size: .76rem; color: var(--text-muted); font-weight: 600; padding: 0 .4rem; }
+.rl-search-hit .rl-friend-status,
+.rl-search-hit .rl-add-friend-btn { margin-left: auto; flex-shrink: 0; }
+.rl-search-hit { justify-content: space-between; }
+
+/* ============================================================
+   ADDED: Legal pages (privacy.html)
+   Reuses .rl-settings-card layout; adds readable prose styling.
+   ============================================================ */
+.rl-legal-card { max-width: 640px; }
+.rl-legal-meta { font-size: .78rem; color: var(--text-muted); margin-top: .6rem; font-family: var(--font-mono); }
+.rl-legal-p { font-size: .9rem; color: var(--text); line-height: 1.65; margin-bottom: .8rem; }
+.rl-legal-p:last-child { margin-bottom: 0; }
+.rl-legal-list { margin: 0; padding-left: 1.2rem; display: flex; flex-direction: column; gap: .55rem; }
+.rl-legal-list li { font-size: .88rem; line-height: 1.6; color: var(--text); }
+.rl-legal-list code, .rl-legal-p code { background: var(--surface-2); padding: .1rem .35rem; border-radius: 5px; font-family: var(--font-mono); font-size: .85em; }
+.rl-legal-card a { color: var(--signal); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+
+/* ADDED: small legal-link footer notices (signup/login/landing) */
+.rl-legal-notice { margin-top: .5rem; font-size: .78rem; }
+.rl-legal-notice-landing {
+  margin-top: 1.1rem; font-size: .76rem; color: var(--text-muted); position: relative; z-index: 1;
+}
+.rl-legal-notice-landing a { color: var(--text-muted); text-decoration: underline; text-underline-offset: 2px; }
+.rl-legal-notice-landing a:hover { color: var(--signal); }
+
+/* ============================================================
+   ADDED: Block system
+   Peer options menu (⋯) in the chat header + Block/Unblock styling.
+   Reuses existing .rl-side-dropdown / .rl-drop-item pattern.
+   ============================================================ */
+.rl-peer-menu-wrap { position: relative; }
+.rl-peer-menu {
+  position: absolute; top: calc(100% + 6px); right: 0; min-width: 140px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm);
+  box-shadow: var(--shadow); overflow: hidden; z-index: 30;
+}
+.rl-block-btn { color: var(--danger); }
+.rl-block-btn:hover { background: var(--danger-soft); }
+.rl-block-btn.rl-block-btn-active { color: var(--text); }
