@@ -1,24 +1,21 @@
-// ─── Firebase config ────────────────────────────────────────────────────
-// Relay uses Firebase (Firestore) so messages sync in real time between
-// accounts. You need your OWN Firebase project — don't reuse another
-// project's config here.
-//
-// How to get this (free, ~3 minutes):
-//   1. Go to https://console.firebase.google.com/ and create a project.
-//   2. In the project, click the "</>" (web) icon to register a web app.
-//   3. Firebase shows you a config object — copy the values into FIREBASE_CONFIG below.
-//   4. In the left sidebar go to Build → Authentication → Sign-in method.
-//      Enable Email/Password and Google. Add your deployed domain to
-//      Authentication → Settings → Authorized domains.
-//   5. Go to Build → Firestore Database → Create database and publish
-//      the rules in firestore.rules.
-//
-// Until you fill this in, Relay will show a setup message instead of crashing.
-const FIREBASE_CONFIG = {
-  apiKey: "",
-  authDomain: "",
-  projectId: "",
-  storageBucket: "",
-  messagingSenderId: "",
-  appId: "",
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyDklnZRCFnxxHLP_MV6j4_ZR5vykY1LQ0E",
+  authDomain: "relay-8a807.firebaseapp.com",
+  projectId: "relay-8a807",
+  storageBucket: "relay-8a807.firebasestorage.app",
+  messagingSenderId: "219719482946",
+  appId: "1:219719482946:web:967caac406eb31131df7db",
+  measurementId: "G-B5WEX4SY8S"
 };
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
