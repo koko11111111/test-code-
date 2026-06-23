@@ -6,15 +6,16 @@
 (function () {
   const me = getCurrentUser();
   if (!me) return; // auth.js already redirects; this just avoids a crash mid-redirect
-
-  const REACTION_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
+  
+const REACTION_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
   const AVATAR_COLORS = ["#FF9F40", "#6FCF8E", "#5AC8E2", "#E2675A", "#C792EA", "#F4D35E"];
   const HEARTBEAT_MS = 20000;
   const ONLINE_WINDOW_MS = 60000;
   const MAX_IMAGE_DIMENSION = 1024;
   const MAX_IMAGE_BYTES_OUT = 700000;
   const MAX_VOICE_MS = 60000;
-  const MAX_VOICE_BYTES_OUT = 900000;
+  const MAX_VOICE_BYTES_OUT = 650000;
+
 
   // ---- dom refs ----
   const appEl = document.getElementById("rl-app");
