@@ -32,6 +32,34 @@ A static front end cannot guarantee perfect secrecy by itself because every brow
 6. Go to Build → Firestore Database → Create database.
 7. Publish the rules from `firestore.rules`.
 
+## Google Sign-In setup (required — Firebase Console)
+
+Google sign-in is fully wired in the code. The "Continue with Google" button is active as long as these steps are completed in Firebase Console:
+
+1. Go to [Firebase Console](https://console.firebase.google.com/) → **relay-8a807** → Build → **Authentication** → Sign-in method.
+2. Click **Google** → toggle **Enable** → fill in a **Project support email** (your email) → **Save**.
+3. Still in Authentication → go to **Settings** → **Authorized domains** → add every domain you'll serve Relay from (e.g. `relay-8a807.web.app`, `relay-8a807.firebaseapp.com`, and your custom domain if you have one). `localhost` is added by default for development.
+4. If the Google sign-in popup says "This app isn't verified" or "unauthorized client":
+   - Open [Google Cloud Console](https://console.cloud.google.com/) → select **relay-8a807** → **APIs & Services** → **OAuth consent screen**.
+   - Fill in **App name**, **User support email**, and **Developer contact information** → Save.
+   - Go to **APIs & Services** → **Credentials** → find the **Web client (auto created by Google Service)** → click it → under **Authorized JavaScript origins** add your domain → Save.
+   - Wait 5–10 minutes for changes to propagate.
+
+## Before you go live — checklist
+
+These are the steps that can't be done in code. Go through them in order:
+
+- [ ] **Firebase Authentication → Sign-in method**: enable Email/Password and Google (see above).
+- [ ] **Firebase Authentication → Authorized domains**: add your production domain; remove `localhost` if this is a production-only deploy.
+- [ ] **Deploy Firestore rules**: `firebase deploy --only firestore:rules` — do this BEFORE making the site public.
+- [ ] **Deploy Firestore indexes**: `firebase deploy --only firestore:indexes`
+- [ ] **Deploy Cloud Functions**: `cd functions && npm install && cd .. && firebase deploy --only functions`
+- [ ] **Deploy hosting**: `firebase deploy --only hosting`
+- [ ] **Set ADMIN_EMAILS**: edit `firestore.rules`, `functions/index.js`, and `admin.js` — replace `you@example.com` with your real email. Redeploy rules + functions.
+- [ ] **Set contact email**: edit `privacy.html` Section 1 — replace `[OPERATOR CONTACT EMAIL — fill this in before publishing]` with your real contact email. Redeploy hosting.
+- [ ] **Restrict the API key**: Google Cloud Console → APIs & Services → Credentials → find the Browser API key → restrict it to your production domain only (HTTP referrers).
+- [ ] **Test rules**: open your browser console on a page that reads Firestore before signing in — you should see `PERMISSION_DENIED`, not data.
+
 ## Google Cloud / OAuth setup
 
 Firebase creates the Google OAuth client for most web apps. If Google sign-in says the app/domain is not authorized:

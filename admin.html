@@ -4,45 +4,73 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="referrer" content="no-referrer">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://*.firebaseio.com https://www.googleapis.com; connect-src 'self' https://*.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; object-src 'none'; frame-src 'self' https://accounts.google.com; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests">
-  <title>Admin Dashboard | Relay</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://*.firebaseio.com https://www.googleapis.com; connect-src 'self' https://*.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://*.cloudfunctions.net; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests">
+  <title>Admin | Relay</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
   <link rel="stylesheet" href="styles.css">
   <script src="theme.js"></script>
 </head>
 <body>
-  <main class="rl-settings-layout">
-    <section class="rl-settings-card" id="admin-dashboard">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; border-bottom: 1px solid var(--line); padding-bottom: 12px;">
-        <h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif;">System Administration</h1>
-        <a href="chat.html" class="btn" style="text-decoration: none; font-size: 0.9rem;">← Back</a>
-      </div>
+  <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle theme">☀️</button>
 
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
-        <div style="background: var(--surface-2); padding: 16px; border-radius: 8px; text-align: center;">
-          <p style="margin: 0 0 8px 0; color: var(--text-muted); font-size: 0.9rem; uppercase">Total Users</p>
-          <span id="total-users" style="font-size: 2rem; font-weight: 700; color: var(--signal)">...</span>
-        </div>
-        <div style="background: var(--surface-2); padding: 16px; border-radius: 8px; text-align: center;">
-          <p style="margin: 0 0 8px 0; color: var(--text-muted); font-size: 0.9rem; uppercase">Active Chats</p>
-          <span id="total-chats" style="font-size: 2rem; font-weight: 700; color: var(--signal)">...</span>
-        </div>
-      </div>
+  <main class="rl-settings-layout">
+    <section class="rl-settings-card rl-admin-card">
+      <a class="rl-back-link" href="chat.html">← Back to chat</a>
 
       <div class="rl-settings-section">
-        <h2>Managed Accounts</h2>
-        <p class="rl-row-sub">Real-time index of registered application node configurations.</p>
-        <div id="admin-users-list" style="margin-top: 16px;">
-          <p class="rl-hint">Connecting to infrastructure stream...</p>
-        </div>
+        <h1>Admin · Report queue</h1>
+        <p class="rl-settings-sub">Only visible to admin accounts. Real enforcement happens in Firestore security rules — this page just renders what you're allowed to read.</p>
       </div>
+
+      <section id="admin-denied" class="rl-settings-section hidden">
+        <p class="rl-row-sub">You're signed in, but this account isn't an admin (or Firebase isn't configured). If you believe this is wrong, check the <code>ADMIN_EMAILS</code> list in <code>firestore.rules</code> and <code>functions/index.js</code> — both need your email added and republished/redeployed.</p>
+      </section>
+
+      <section id="admin-content" class="hidden">
+        <div class="rl-settings-section">
+          <div class="rl-admin-tabs">
+            <button class="rl-side-tab active" id="admin-tab-open" type="button">Open</button>
+            <button class="rl-side-tab" id="admin-tab-resolved" type="button">Resolved</button>
+            <button class="rl-side-tab" id="admin-tab-dismissed" type="button">Dismissed</button>
+          </div>
+          <div id="admin-reports-list">
+            <p class="rl-hint" id="admin-reports-empty">No reports here.</p>
+          </div>
+        </div>
+
+        <div class="rl-settings-section">
+          <h2>Rate-limit strikes</h2>
+          <p class="rl-row-sub">Accounts the message/friend-request rate limiter has flagged. Requires the Cloud Functions in <code>functions/</code> to be deployed — this list will stay empty otherwise.</p>
+          <div id="admin-strikes-list">
+            <p class="rl-hint" id="admin-strikes-empty">No strikes recorded.</p>
+          </div>
+        </div>
+      </section>
     </section>
   </main>
 
+  <!-- ADDED: report detail / resolve modal -->
+  <div class="rl-modal-backdrop hidden" id="admin-report-modal-backdrop">
+    <div class="rl-modal" role="dialog" aria-modal="true" aria-labelledby="admin-report-modal-title">
+      <h2 id="admin-report-modal-title">Report detail</h2>
+      <div id="admin-report-detail"></div>
+      <label class="remember-row" for="admin-disable-account">
+        <input id="admin-disable-account" type="checkbox">
+        Also disable the reported account (Firebase Authentication only)
+      </label>
+      <p id="admin-report-message" class="form-message" aria-live="polite"></p>
+      <div class="rl-modal-actions">
+        <button class="btn btn-secondary" id="admin-dismiss-btn" type="button">Dismiss report</button>
+        <button class="btn btn-danger" id="admin-resolve-btn" type="button">Resolve report</button>
+      </div>
+    </div>
+  </div>
+
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-functions-compat.js"></script>
   <script src="config.js"></script>
   <script src="auth.js"></script>
   <script src="admin.js"></script>

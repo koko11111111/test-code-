@@ -69,6 +69,7 @@
         <div class="rl-side-dropdown hidden" id="side-dropdown">
           <a class="rl-drop-item" href="settings.html">Settings</a>
           <a class="rl-drop-item" href="privacy.html">Privacy &amp; Terms</a>
+          <a class="rl-drop-item" href="admin.html">Admin</a>
           <button class="rl-drop-item" id="logout-btn" type="button">Log Out</button>
         </div>
       </div>
@@ -96,6 +97,7 @@
           <div class="rl-peer-menu-wrap">
             <button class="rl-icon-btn" id="peer-menu-toggle" type="button" aria-label="Conversation options">⋯</button>
             <div class="rl-peer-menu hidden" id="peer-menu">
+              <button class="rl-drop-item" id="report-peer-btn" type="button">Report</button>
               <button class="rl-drop-item rl-block-btn" id="block-peer-btn" type="button">Block</button>
             </div>
           </div>
@@ -131,6 +133,29 @@
         <p class="form-message error hidden" id="compose-error" style="padding:0 1.3rem .6rem"></p>
       </section>
     </main>
+  </div>
+
+  <!-- ADDED: report system — report reason modal -->
+  <div class="rl-modal-backdrop hidden" id="report-modal-backdrop">
+    <div class="rl-modal" role="dialog" aria-modal="true" aria-labelledby="report-modal-title">
+      <h2 id="report-modal-title">Report this person</h2>
+      <p class="rl-row-sub">This sends a report to the people who run this Relay instance. They may review recent messages in this conversation to investigate.</p>
+      <label for="report-reason">Reason</label>
+      <select id="report-reason">
+        <option value="harassment">Harassment or abuse</option>
+        <option value="spam">Spam</option>
+        <option value="impersonation">Impersonation</option>
+        <option value="explicit_content">Unwanted explicit content</option>
+        <option value="other">Other</option>
+      </select>
+      <label for="report-details">Details (optional)</label>
+      <textarea id="report-details" rows="3" maxlength="500" placeholder="Anything that helps explain what happened…"></textarea>
+      <p id="report-message" class="form-message" aria-live="polite"></p>
+      <div class="rl-modal-actions">
+        <button class="btn btn-secondary" id="report-cancel-btn" type="button">Cancel</button>
+        <button class="btn btn-danger" id="report-submit-btn" type="button">Submit Report</button>
+      </div>
+    </div>
   </div>
 
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>

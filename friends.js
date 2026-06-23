@@ -144,7 +144,17 @@
     const ref = db.collection("friendRequests").doc(id);
     try {
       const snap = await ref.get();
-      if (snap.exists && snap.data().status === "accepted") return; // already friends
+      if (snap.exists) {
+        const existing = snap.data();
+        if (existing.status === "accepted") return; // already friends
+        if (existing.from !== me.email) {
+          // The other person's earlier request (now declined, or stale)
+          // points the other direction. Clear it so this request can be
+          // created fresh with me as the sender — matches the security
+          // rules, which never let an update flip who 'from'/'to' are.
+          await ref.delete();
+        }
+      }
       await ref.set({
         from: me.email,
         to: targetUser.email,

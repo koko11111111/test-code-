@@ -21,72 +21,91 @@
       <div class="rl-settings-section">
         <h1>Privacy &amp; Terms</h1>
         <p class="rl-settings-sub">What Relay actually does with your data — written to match the code, not a generic template.</p>
-        <p class="rl-legal-meta">Last updated: <time datetime="2026-06-21">June 21, 2026</time></p>
+        <p class="rl-legal-meta">Last updated: <time datetime="2026-06-23">June 23, 2026</time></p>
       </div>
 
       <div class="rl-settings-section">
-        <h2>1. What Relay is</h2>
-        <p class="rl-legal-p">Relay is a small, self-hosted real-time messaging web app. It runs securely on Google Firebase architecture. If you're using a Relay instance someone else set up, that person or organization controls the Firebase project your data lives in.</p>
+        <h2>1. Who operates Relay</h2>
+        <p class="rl-legal-p">Relay is operated by the individual or organization that deployed this instance (the "operator"). This instance accepts open public signups. The operator controls the Firebase project that stores your data, and is responsible for moderation and responding to reports of abuse.</p>
+        <p class="rl-legal-p">Relay runs on Google Firebase infrastructure — there is no separate Relay company or legal entity beyond the operator of this instance. If you have questions about your data or this platform, contact the operator at: <strong>[OPERATOR CONTACT EMAIL — fill this in before publishing]</strong>.</p>
       </div>
 
       <div class="rl-settings-section">
         <h2>2. Information we store</h2>
-        <p class="rl-legal-p">Creating an account and using Relay stores the following in that Firebase project's Authentication and Firestore database:</p>
+        <p class="rl-legal-p">Creating an account and using Relay stores the following in the operator's Firebase Authentication and Firestore database:</p>
         <ul class="rl-legal-list">
           <li><strong>Account info:</strong> your name, email address, and (if you sign in with Google) the profile photo Google provides.</li>
-          <li><strong>Public profile:</strong> your display name, email, avatar, account creation time, and a "last active" timestamp, stored in a <code>users</code> collection so other people can find you to start a conversation.</li>
-          <li><strong>Messages:</strong> text messages, image attachments, and voice messages you send. Images and voice messages are compressed in your browser before upload but are <strong>not encrypted</strong> — they are stored as plain Firestore data.</li>
-          <li><strong>Message metadata:</strong> who sent a message, when, emoji reactions, and read receipts.</li>
-          <li><strong>Friend requests and friends list:</strong> if you send or receive a friend request, the two email addresses involved and the request status are stored.</li>
-          <li><strong>Blocked users:</strong> if you block someone, their email address is added to a private <code>blocked</code> list. They are not notified.</li>
-          <li><strong>Local device data:</strong> your light/dark theme choice, and — only if you check "Remember me" — your email address, are stored in <code>localStorage</code>.</li>
+          <li><strong>Public profile:</strong> your display name, email, avatar, account creation time, and a "last active" timestamp, stored in a <code>users</code> collection so other users on this instance can find you to start a conversation.</li>
+          <li><strong>Messages:</strong> text messages, image attachments, and voice messages you send, stored in a <code>conversations</code> collection. Images are compressed in your browser before upload (resized and capped around 700 KB); voice messages are compressed and capped at 60 seconds before upload. Neither is end-to-end encrypted — they are stored as plain Firestore data, readable by the operator.</li>
+          <li><strong>Message metadata:</strong> who sent a message, when, emoji reactions, and read receipts (whether the recipient has opened it).</li>
+          <li><strong>Friend requests and friends list:</strong> if you send or receive a friend request, the two email addresses and the request status (pending/accepted/declined) are stored in a <code>friendRequests</code> collection. Accepted friends appear in each other's friends list on their profile document.</li>
+          <li><strong>Blocked users:</strong> if you block someone, their email address is added to a private <code>blocked</code> list on your profile document. The blocked person is not notified.</li>
+          <li><strong>Abuse reports:</strong> if you report another user, the report (your email, the reported user's email, the reason, any details you provide, and the conversation ID) is stored in a <code>reports</code> collection and is readable only by the operator.</li>
+          <li><strong>Rate-limit records:</strong> if the server-side rate limiter detects unusual activity from your account, a record noting your email, the type of activity, and the timestamp is stored in a <code>rateLimitStrikes</code> collection for operator review.</li>
+          <li><strong>Theme and login convenience:</strong> your light/dark theme choice, and — only if you check "Remember me" — your email address, are stored in your browser's <code>localStorage</code> on your device only.</li>
+          <li><strong>Privacy lock state:</strong> if you enable the privacy lock in Settings, a "last active" timestamp is stored in <code>localStorage</code> on your device to auto-log-out after 30 idle minutes.</li>
         </ul>
       </div>
 
       <div class="rl-settings-section">
         <h2>3. What we don't do</h2>
         <ul class="rl-legal-list">
-          <li>No analytics, ad tracking, or third-party tracking scripts of any kind are included in Relay's code.</li>
-          <li>No advertising — Relay doesn't show ads or sell data to advertisers.</li>
-          <li>No message content is end-to-end encrypted.</li>
+          <li>No analytics, ad-tracking, or third-party tracking scripts of any kind are included in Relay's code.</li>
+          <li>No advertising — Relay never shows ads or sells data to advertisers.</li>
+          <li>No end-to-end encryption — the operator (and anyone with admin access to the underlying Firebase project) can technically read stored messages, images, and voice notes. Do not send anything you'd consider confidential.</li>
+          <li>Being someone's "friend" does not restrict who can message you. Any signed-in user on this instance can start a conversation with any other. Use the Block feature to prevent contact from a specific person.</li>
         </ul>
       </div>
 
       <div class="rl-settings-section">
-        <h2>4. Third parties involved</h2>
-        <p class="rl-legal-p">Relay's code only ever talks to two outside services, governed by their own privacy policies:</p>
+        <h2>4. Third-party services</h2>
+        <p class="rl-legal-p">Relay's code only contacts two outside services:</p>
         <ul class="rl-legal-list">
-          <li><strong>Google Fonts</strong> — loads the typefaces used on every page.</li>
-          <li><strong>Firebase / Google Cloud</strong> — provides account authentication and the Firestore database that stores profiles, messages, and friend data.</li>
+          <li><strong>Google Fonts</strong> (<code>fonts.googleapis.com</code>, <code>fonts.gstatic.com</code>) — loads the typefaces used on every page. Google may log the request including your IP address.</li>
+          <li><strong>Firebase / Google Cloud</strong> (<code>*.firebaseio.com</code>, <code>*.googleapis.com</code>, <code>*.cloudfunctions.net</code>) — provides authentication (email/password and Google sign-in), the Firestore database, and the Cloud Functions that enforce rate limiting and moderation. See <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">Google's Privacy Policy</a> for how Google handles infrastructure-level data.</li>
         </ul>
+        <p class="rl-legal-p">No other analytics, advertising, payment, or social-media SDKs are included.</p>
       </div>
 
       <div class="rl-settings-section">
         <h2>5. Your choices and controls</h2>
         <ul class="rl-legal-list">
           <li><strong>Edit your profile</strong> (display name, photo) any time from Settings.</li>
-          <li><strong>Delete a message</strong> you sent at any time from the chat view.</li>
-          <li><strong>Remove a friend</strong> any time from the Friends panel.</li>
-          <li><strong>Block or unblock someone</strong> any time from a conversation's "⋯" menu.</li>
-          <li><strong>Delete your account</strong> from Settings → Danger Zone. This removes your local account record, deletes your public profile, and deletes the authentication account.</li>
+          <li><strong>Delete a message</strong> you sent at any time from the chat view. Deletion is permanent but only removes it from the message list — it does not delete any abuse report that may have already been filed referencing it.</li>
+          <li><strong>Remove a friend</strong> from the Friends panel — removes the connection on both accounts and deletes the friend-request record.</li>
+          <li><strong>Block or unblock someone</strong> via the "⋯" menu in any conversation, or from Settings → Blocked Users. Blocking also removes any existing friendship.</li>
+          <li><strong>Report someone</strong> via the "⋯" menu. Reports are reviewed by the operator.</li>
+          <li><strong>Enable the privacy lock</strong> in Settings to auto-log-out an idle device after 30 minutes.</li>
+          <li><strong>Delete your account</strong> from Settings → Danger Zone. This removes your local account record, your Firestore profile document, and your Firebase Authentication account. It does <em>not</em> delete messages you've sent in shared conversations, or abuse reports filed about you — those are retained for safety purposes.</li>
         </ul>
       </div>
 
       <div class="rl-settings-section">
-        <h2>6. Age limitations</h2>
-        <p class="rl-legal-p">Relay requires users to be at least 13 years of age. We do not knowingly collect or maintain information from individuals under this threshold. If an account is discovered to belong to a minor under 13, it will be terminated immediately.</p>
+        <h2>6. Moderation and enforcement</h2>
+        <p class="rl-legal-p">The operator reviews abuse reports submitted through the in-app Report feature. The operator may, at their discretion, remove content or disable accounts that violate the Terms of Use below. Because messages are not end-to-end encrypted, the operator has the technical ability to read conversation content when investigating a report.</p>
+        <p class="rl-legal-p">Server-side rate limiting is in place to detect and suppress spam (mass messages or friend requests). Accounts that trigger the rate limiter are flagged for operator review.</p>
       </div>
 
       <div class="rl-settings-section">
-        <h2>7. Terms of use & Contact</h2>
+        <h2>7. Children</h2>
+        <p class="rl-legal-p">Relay is not directed at children under 13 (or the relevant age of digital consent in your country — 16 in some EU member states, for example). If you are under that age, do not create an account. This platform has no age-verification mechanism; parents or guardians who believe a child has created an account should contact the operator at the address in Section 1 to request account removal.</p>
+      </div>
+
+      <div class="rl-settings-section">
+        <h2>8. Terms of use</h2>
         <ul class="rl-legal-list">
-          <li>Relay is provided on an "as is" and "as available" basis without operational warranties or guaranteed service uptime.</li>
-          <li>Users are entirely responsible for keeping their login credentials secure and for any data transmitted through their active sessions.</li>
-          <li>Data transmitted through Relay is stored in a cloud environment and is not end-to-end encrypted; avoid distributing high-sensitivity operational or personal information.</li>
-          <li>For safety notices, abuse complaints, or data removal requests, please submit an issue or contact the support desk via our official project distribution repository.</li>
+          <li>Relay is provided without warranty or uptime guarantee.</li>
+          <li>You are responsible for the content you send and for keeping your credentials secure.</li>
+          <li>You may not use Relay to harass, abuse, or threaten others; send spam; impersonate others; or distribute unlawful content.</li>
+          <li>Because messages are not end-to-end encrypted, do not send anything through Relay you consider confidential or private.</li>
+          <li>The operator may suspend or terminate accounts that violate these terms.</li>
         </ul>
       </div>
-    </section>
+
+      <div class="rl-settings-section">
+        <h2>9. Changes to this policy</h2>
+        <p class="rl-legal-p">If the operator changes what data Relay collects or how it's used, this page will be updated to reflect that. Continued use after a change is published constitutes acceptance of the updated terms. For material changes, the operator should notify active users directly where reasonably practicable.</p>
+      </div>
   </main>
 </body>
 </html>

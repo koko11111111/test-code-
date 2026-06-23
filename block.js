@@ -217,8 +217,71 @@
     }, (err) => console.warn("Relay: reverse-block listener error —", err.message));
   }
 
+  // ── ADDED: report system ─────────────────────────────────────────────
+  const reportPeerBtn = document.getElementById("report-peer-btn");
+  const reportModalBackdrop = document.getElementById("report-modal-backdrop");
+  const reportReasonSelect = document.getElementById("report-reason");
+  const reportDetailsInput = document.getElementById("report-details");
+  const reportMessageEl = document.getElementById("report-message");
+  const reportCancelBtn = document.getElementById("report-cancel-btn");
+  const reportSubmitBtn = document.getElementById("report-submit-btn");
+
+  function setReportMessage(text, type) {
+    if (!reportMessageEl) return;
+    reportMessageEl.textContent = text;
+    reportMessageEl.className = `form-message ${type || ""}`;
+  }
+
+  function openReportModal() {
+    if (!reportModalBackdrop) return;
+    setReportMessage("", "");
+    if (reportDetailsInput) reportDetailsInput.value = "";
+    if (reportReasonSelect) reportReasonSelect.value = "harassment";
+    reportModalBackdrop.classList.remove("hidden");
+    if (peerMenu) peerMenu.classList.add("hidden");
+  }
+
+  function closeReportModal() {
+    if (reportModalBackdrop) reportModalBackdrop.classList.add("hidden");
+  }
+
+  async function submitReport() {
+    const peerEmail = currentChatPeerEmail();
+    if (!peerEmail) { setReportMessage("Open a conversation first.", "error"); return; }
+    if (!db) { setReportMessage("Reporting needs Firebase configured.", "error"); return; }
+    try {
+      setReportMessage("Sending…", "warning");
+      const activeConv = document.querySelector(".rl-conv-item.active");
+      const conversationId = activeConv ? activeConv.getAttribute("data-conv-id") : null;
+      await db.collection("reports").add({
+        reportedBy: me.email,
+        reportedUser: peerEmail,
+        reason: reportReasonSelect ? reportReasonSelect.value : "other",
+        details: reportDetailsInput ? reportDetailsInput.value.trim().slice(0, 500) : "",
+        conversationId: conversationId,
+        status: "open",
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+      setReportMessage("Report sent. Thank you.", "success");
+      window.setTimeout(closeReportModal, 900);
+    } catch (e) {
+      setReportMessage("Could not send report: " + e.message, "error");
+    }
+  }
+
+  function wireReportModal() {
+    if (!reportPeerBtn || !reportModalBackdrop) return;
+    reportPeerBtn.addEventListener("click", openReportModal);
+    if (reportCancelBtn) reportCancelBtn.addEventListener("click", closeReportModal);
+    if (reportSubmitBtn) reportSubmitBtn.addEventListener("click", submitReport);
+    reportModalBackdrop.addEventListener("click", (event) => {
+      if (event.target === reportModalBackdrop) closeReportModal();
+    });
+  }
+
   function initBlock() {
     wirePeerMenu();
+    wireReportModal();
     db = getFirebaseDb();
     if (!db) return; // same as chat.js/friends.js: needs Firebase configured
     listenMyBlockedAndFriends();

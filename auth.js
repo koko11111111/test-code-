@@ -221,7 +221,7 @@ function startPrivacyLockWatch() {
 }
 
 function requireLoginForPage() {
-  const isProtected = isOnPage("chat.html") || isOnPage("settings.html");
+  const isProtected = isOnPage("chat.html") || isOnPage("settings.html") || isOnPage("admin.html");
   if (!isProtected) return;
   if (!getCurrentUser()) window.location.href = "login.html";
   else enforceIdleLock();

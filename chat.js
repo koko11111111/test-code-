@@ -6,16 +6,15 @@
 (function () {
   const me = getCurrentUser();
   if (!me) return; // auth.js already redirects; this just avoids a crash mid-redirect
-  
-const REACTION_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
+
+  const REACTION_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
   const AVATAR_COLORS = ["#FF9F40", "#6FCF8E", "#5AC8E2", "#E2675A", "#C792EA", "#F4D35E"];
   const HEARTBEAT_MS = 20000;
   const ONLINE_WINDOW_MS = 60000;
   const MAX_IMAGE_DIMENSION = 1024;
   const MAX_IMAGE_BYTES_OUT = 700000;
   const MAX_VOICE_MS = 60000;
-  const MAX_VOICE_BYTES_OUT = 650000;
-
+  const MAX_VOICE_BYTES_OUT = 650000; // caps the base64-encoded data URL, not the raw recording — see handleVoiceStop()
 
   // ---- dom refs ----
   const appEl = document.getElementById("rl-app");
@@ -590,6 +589,10 @@ const REACTION_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
     if (!file.type.startsWith("image/")) { showComposeError("Please choose an image file."); imageInput.value = ""; return; }
     if (file.size > 8 * 1024 * 1024) { showComposeError("That image is too large. Try one under 8MB."); imageInput.value = ""; return; }
 
+    // FIX: only one attachment (image OR voice) at a time, so they can
+    // never combine past Firestore's document size limit.
+    if (pendingVoiceDataUrl) clearPendingVoice();
+
     try {
       let dataUrl = await compressImage(file, MAX_IMAGE_DIMENSION, 0.72);
       if (dataUrl.length > MAX_IMAGE_BYTES_OUT) dataUrl = await compressImage(file, 720, 0.6);
@@ -673,6 +676,8 @@ const REACTION_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
       return;
     }
     if (pendingVoiceDataUrl) clearPendingVoice();
+    // FIX: symmetric to handleImageInput — only one attachment at a time.
+    if (pendingImageDataUrl) clearPendingImage();
     try {
       mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
       voiceChunks = [];
@@ -700,9 +705,16 @@ const REACTION_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
     const duration = Date.now() - voiceStartedAt;
     const blob = new Blob(voiceChunks, { type });
     voiceChunks = [];
-    if (blob.size > MAX_VOICE_BYTES_OUT) { showComposeError("Voice message is too long. Keep it under 60 seconds."); return; }
     try {
-      pendingVoiceDataUrl = await blobToDataUrl(blob);
+      const dataUrl = await blobToDataUrl(blob);
+      // Check the ENCODED size, not the raw blob size — base64 adds ~33%
+      // overhead, and Firestore documents are capped around 1MiB total
+      // (message also carries sender, timestamps, reactions, readBy).
+      if (dataUrl.length > MAX_VOICE_BYTES_OUT) {
+        showComposeError("Voice message is too long. Keep it under 60 seconds.");
+        return;
+      }
+      pendingVoiceDataUrl = dataUrl;
       pendingVoiceType = type;
       pendingVoiceDurationMs = duration;
       renderVoicePreview();
@@ -729,6 +741,16 @@ const REACTION_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
     // ADDED: block system — stop the send if either side has blocked the other.
     if (window.RelayBlock && currentPeer && window.RelayBlock.isBlockedEitherWay(currentPeer.email)) {
       showComposeError("You can't message this person.");
+      return;
+    }
+
+    // FIX: an image and a voice message can both be pending at once, and
+    // together can exceed Firestore's ~1MiB document limit even though
+    // each individually passed its own cap. Block that combination here.
+    const combinedAttachmentBytes = (pendingImageDataUrl ? pendingImageDataUrl.length : 0)
+      + (pendingVoiceDataUrl ? pendingVoiceDataUrl.length : 0);
+    if (combinedAttachmentBytes > MAX_IMAGE_BYTES_OUT + MAX_VOICE_BYTES_OUT - 50000) {
+      showComposeError("Can't send a photo and voice message together — send them separately.");
       return;
     }
 

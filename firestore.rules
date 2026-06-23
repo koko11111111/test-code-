@@ -1,0 +1,135 @@
+rules_version = '2';
+
+// ─── Relay Firestore security rules ─────────────────────────────────────
+// Deploy via: Firebase Console → Firestore Database → Rules → paste this
+// file → Publish. Or with the Firebase CLI: `firebase deploy --only firestore:rules`.
+//
+// IMPORTANT — admin emails:
+// A small, fixed list of admin emails is hardcoded below so the report
+// queue (used by the in-app moderation view) is only readable by people
+// you trust. Edit ADMIN_EMAILS and republish whenever your admin list
+// changes — Firestore rules can't read this from a database doc without
+// an extra read on every single request, which isn't worth the cost here.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedInRelayUser() {
+      return request.auth != null && request.auth.token.email != null;
+    }
+
+    function myEmail() {
+      return request.auth.token.email;
+    }
+
+    // EDIT THIS LIST before publishing — these accounts can read /reports.
+    function isAdmin() {
+      return myEmail() in [
+        'you@example.com'
+      ];
+    }
+
+    // ── users/{userId} ────────────────────────────────────────────────
+    // userId is an arbitrary sanitized key derived from the email on the
+    // client (see emailKey() in auth.js); rules verify ownership via the
+    // `email` field stored inside the document, not by recomputing the
+    // key, since rules can't replicate that client-side regex.
+    match /users/{userId} {
+      allow read: if signedInRelayUser();
+
+      allow create: if signedInRelayUser()
+        && request.resource.data.email == myEmail();
+
+      // Anyone signed in may update a user doc (this is intentionally
+      // broad because friend-accept and block both need to write a single
+      // array field — `friends` or `blocked` — onto the OTHER person's
+      // doc, e.g. adding yourself to their friends list when you accept
+      // their request). To prevent abuse, an update is only allowed if:
+      //   - it's your own doc (any field), OR
+      //   - it's someone else's doc, but the only fields changing are
+      //     `friends` and/or `blocked`, and every other field is
+      //     untouched (so you can't rename someone or change their email).
+      allow update: if signedInRelayUser() && (
+        resource.data.email == myEmail()
+        || request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['friends', 'blocked'])
+      );
+
+      allow delete: if signedInRelayUser() && resource.data.email == myEmail();
+    }
+
+    // ── friendRequests/{requestId} ──────────────────────────────────────
+    // Only the sender or recipient may read/write a given request. The
+    // `from` field must match the creator on create, so no one can forge
+    // a request that appears to come from someone else. Only status and
+    // updatedAt may change after creation.
+    match /friendRequests/{requestId} {
+      allow read: if signedInRelayUser()
+        && (myEmail() == resource.data.from || myEmail() == resource.data.to);
+
+      allow create: if signedInRelayUser()
+        && myEmail() == request.resource.data.from
+        && request.resource.data.to != myEmail()
+        && request.resource.data.status == 'pending';
+
+      allow update: if signedInRelayUser()
+        && (myEmail() == resource.data.from || myEmail() == resource.data.to)
+        && request.resource.data.from == resource.data.from
+        && request.resource.data.to == resource.data.to
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt']);
+
+      // friends.js calls delete() when unfriending, to clear the old
+      // accepted request record so a future re-request starts clean.
+      allow delete: if signedInRelayUser()
+        && (myEmail() == resource.data.from || myEmail() == resource.data.to);
+    }
+
+    // ── conversations/{conversationId} ───────────────────────────────────
+    match /conversations/{conversationId} {
+      // On create there is no existing document, so the participants
+      // check must read request.resource.data (the incoming write),
+      // not resource.data (which doesn't exist yet on create).
+      allow create: if signedInRelayUser()
+        && myEmail() in request.resource.data.participants
+        && request.resource.data.participants.size() == 2;
+
+      allow read, update: if signedInRelayUser()
+        && myEmail() in resource.data.participants;
+
+      match /messages/{messageId} {
+        function isParticipant() {
+          return myEmail() in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
+        }
+
+        allow read: if signedInRelayUser() && isParticipant();
+
+        allow create: if signedInRelayUser() && isParticipant()
+          && request.resource.data.sender == myEmail();
+
+        // Only the sender may delete their own message; reactions and
+        // readBy can be updated by any participant.
+        allow update: if signedInRelayUser() && isParticipant();
+        allow delete: if signedInRelayUser() && isParticipant()
+          && resource.data.sender == myEmail();
+      }
+    }
+
+    // ── reports/{reportId} ────────────────────────────────────────────
+    // Abuse reports. A reporter can create a report and read their own
+    // submissions, but never read other people's reports — only an admin
+    // can list/read the full report queue (see the admin view in the app).
+    match /reports/{reportId} {
+      allow create: if signedInRelayUser()
+        && request.resource.data.reportedBy == myEmail()
+        && request.resource.data.status == 'open';
+
+      allow read: if signedInRelayUser()
+        && (resource.data.reportedBy == myEmail() || isAdmin());
+
+      // Only an admin may change status (e.g. mark resolved/dismissed).
+      allow update: if signedInRelayUser() && isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'reviewedBy', 'reviewedAt', 'adminNote']);
+
+      allow delete: if false; // keep a permanent audit trail; never delete reports
+    }
+  }
+}
